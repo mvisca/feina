@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.8.1] - 2026-09-02
+
+### Added
+
+- Chips de estado con contador en las tarjetas Specs y Tasks del overview. Navegan a la lista completa filtrada (`#/specs?status=pending`) en vez de filtrar la tarjeta truncada, para que el filtro nunca opere sobre un recorte arbitrario. Se omiten los estados sin items.
+
+### Fixed
+
+- El contenedor del toast quedaba parcialmente visible en reposo: `translateY(140%)` sobre una caja de 30px la desplaza 42px, menos de los 54px necesarios para salir con `bottom: 24px`. Ahora usa `opacity` + `visibility`.
+
 ## [0.8.0] - 2026-09-02
 
 ### Changed

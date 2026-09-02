@@ -106,6 +106,9 @@
     .stat.failed .dot { background: var(--red); }
     .stat .count { font-weight: 600; }
     .stat .label { color: var(--fg-dim); transition: color 0.1s; }
+    .stat.agents .dot { background: var(--gray); }
+    .stat.agents.live .dot { background: var(--green); animation: ripple 1.5s ease-out infinite; }
+    .stat.agents .count[title] { cursor: help; }
 
     .header-actions { display: flex; gap: 8px; align-items: center; }
     .search-wrap { position: relative; }
@@ -591,6 +594,7 @@
         feinai
       </a>
       <div class="stats" id="stats"></div>
+      <button class="stat agents" id="agents-pill" data-goto="#/" title="Active agent processes"></button>
       <div class="header-actions">
         <div class="search-wrap">
           <input class="search-box" id="search" placeholder="Search specs and tasks" autocomplete="off" aria-label="Search specs and tasks">
@@ -664,17 +668,33 @@
         ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
     }
 
+    // SQLite's datetime('now') returns "YYYY-MM-DD HH:MM:SS" in UTC with no
+    // timezone marker. Handed to `new Date()` as-is, the browser parses it as
+    // LOCAL time instead — silently shifting every server timestamp by the
+    // local UTC offset (e.g. a freshly claimed task's elapsed counter always
+    // "starting" at ~2h in a UTC+2 timezone). Treat any zone-less timestamp
+    // from the server as UTC.
+    function parseServerDate(s) {
+      if (!s) return null;
+      const hasZone = /Z$|[+-]\d\d:?\d\d$/.test(s);
+      const d = new Date(hasZone ? s : s.replace(" ", "T") + "Z");
+      return Number.isNaN(d.getTime()) ? null : d;
+    }
+
     function relativeTime(dateStr) {
-      const diff = Date.now() - new Date(dateStr).getTime();
+      const d = parseServerDate(dateStr);
+      if (!d) return "";
+      const diff = Date.now() - d.getTime();
       if (diff < 60000) return "just now";
       if (diff < 3600000) return Math.floor(diff / 60000) + "m ago";
       if (diff < 86400000) return Math.floor(diff / 3600000) + "h ago";
-      return new Date(dateStr).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
     }
 
     function elapsedSince(iso) {
-      if (!iso) return "";
-      const ms = Date.now() - new Date(iso).getTime();
+      const d = parseServerDate(iso);
+      if (!d) return "";
+      const ms = Date.now() - d.getTime();
       if (ms < 0) return "0s";
       const m = Math.floor(ms / 60000);
       const s = Math.floor((ms % 60000) / 1000);
@@ -1604,21 +1624,22 @@
         const iso = el.getAttribute("data-elapsed");
         if (!iso) { el.textContent = ""; return; }
         el.textContent = elapsedSince(iso);
-        const minutes = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+        const d = parseServerDate(iso);
+        const minutes = d ? Math.floor((Date.now() - d.getTime()) / 60000) : 0;
         el.style.color = minutes >= 60 ? "var(--red)" : minutes >= 30 ? "var(--yellow)" : "var(--fg-dim)";
       });
     }
 
     async function pollWorktreeStatus(ids) {
       if (!ids.length) return;
-      const [results, agents] = await Promise.all([
-        Promise.allSettled(ids.map(async (id) => ({
-          id,
-          data: await api("GET", `/api/tasks/${encodeURIComponent(id)}/worktree-status`),
-        }))),
-        api("GET", "/api/agents").catch(() => []),
-      ]);
-      agentProcesses = Array.isArray(agents) ? agents : [];
+      // Agent process data comes from the global agentsPillTimer poll
+      // (pollAgentsGlobal) rather than being re-fetched here, so the navbar
+      // pill and the worktree cards always agree and we don't double the
+      // `ps` calls every 5s.
+      const results = await Promise.allSettled(ids.map(async (id) => ({
+        id,
+        data: await api("GET", `/api/tasks/${encodeURIComponent(id)}/worktree-status`),
+      })));
       for (const r of results) if (r.status === "fulfilled") updateWorktreeCard(r.value.id, r.value.data);
     }
 
@@ -1643,7 +1664,7 @@
       const card = badgeEl.closest(".worktree-card");
       if (card) card.dataset.cardState = state.cls;
 
-      const agent = agentProcesses.find((a) => a.taskId === id);
+      const matches = agentProcesses.filter((a) => a.taskId === id);
       if (processEl) {
         const ownerEl = card?.querySelector(".owner");
         const ownerType = ownerEl?.dataset.ownerType ?? null;
@@ -1651,9 +1672,19 @@
         const ownerTag = ownerType && ownerPid
           ? `<span>${escapeHtml(ownerType)}</span><span>pid ${escapeHtml(ownerPid)}</span>`
           : "";
-        processEl.innerHTML = agent
-          ? `${ownerTag}<span>${agent.cpu}% cpu</span><span>${agent.mem}% mem</span>`
-          : ownerTag;
+        let procTag = "";
+        if (matches.length) {
+          const cpu = matches.reduce((sum, a) => sum + (a.cpu || 0), 0);
+          const mem = matches.reduce((sum, a) => sum + (a.mem || 0), 0);
+          const anyVerified = matches.some((a) => a.verified);
+          const title = anyVerified
+            ? "process cwd confirmed inside this task's worktree"
+            : "matched by task id in the command line only — cwd could not be confirmed";
+          procTag = `<span title="${title}">${matches.length > 1 ? `${matches.length} procs · ` : ""}${cpu.toFixed(1)}% cpu</span><span>${mem.toFixed(1)}% mem</span>${anyVerified ? "" : `<span class="worktree-state" style="opacity:0.7" title="${title}">unverified</span>`}`;
+        } else if (card?.dataset.cardState !== "merged" && card?.dataset.cardState !== "removed") {
+          procTag = `<span class="worktree-state not-created" title="task is in_progress but no matching process was found — it may have exited or crashed">no process detected</span>`;
+        }
+        processEl.innerHTML = ownerTag + procTag;
       }
       if (filesEl) {
         filesEl.innerHTML = data.files?.length
@@ -1679,6 +1710,38 @@
             <span class="label">${escapeHtml(statusLabel(k))}</span>
           </button>`);
       $("#stats").innerHTML = rows.join("");
+    }
+
+    // Global navbar "active agents" pill. Independent of the per-page
+    // worktree-card polling (mountWorktreeCards/pollWorktreeStatus) so the
+    // count stays live on every route, not just the overview — and NOT
+    // cleared by stopLiveTimers(), which runs on every navigation.
+    let agentsPillTimer = null;
+
+    function renderAgentsPill() {
+      const el = $("#agents-pill");
+      if (!el) return;
+      const total = agentProcesses.length;
+      const verified = agentProcesses.filter((a) => a.verified).length;
+      const unverified = total - verified;
+      el.classList.toggle("live", total > 0);
+      const title = total === 0
+        ? "No active agent processes detected"
+        : unverified > 0
+          ? `${verified} verified in their task's worktree, ${unverified} matched by task id only (unconfirmed)`
+          : `${verified} verified in their task's worktree`;
+      el.title = title;
+      el.innerHTML = `<span class="dot"></span><span class="count" title="${escapeHtml(title)}">${total}</span><span class="label">active ${total === 1 ? "agent" : "agents"}</span>`;
+    }
+
+    async function pollAgentsGlobal() {
+      try {
+        const agents = await api("GET", "/api/agents");
+        agentProcesses = Array.isArray(agents) ? agents : [];
+      } catch {
+        agentProcesses = [];
+      }
+      renderAgentsPill();
     }
 
     // ================= Render =================
@@ -1801,6 +1864,8 @@
     render();
     connectSse();
     api("GET", "/api/context").then((ctx) => { appContext = ctx; }).catch(() => {});
+    pollAgentsGlobal();
+    agentsPillTimer = setInterval(pollAgentsGlobal, 5000);
   </script>
 </body>
 </html>

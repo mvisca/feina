@@ -3,6 +3,21 @@
 All notable changes to this project will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.8.3] - 2026-09-02
+
+### Added
+
+- **Contador de agentes activos en el navbar.** Pill junto a los stats del header (`#agents-pill`), visible en cualquier ruta gracias a un poll global independiente (`pollAgentsGlobal`, cada 5s) que no se detiene al navegar entre páginas. Muestra el total de procesos matcheados y, en el tooltip, cuántos están verificados contra el worktree real vs. sólo matcheados por id de tarea.
+
+### Fixed
+
+- **El contador de tiempo transcurrido de una tarea siempre arrancaba en ~120m.** `datetime('now')` de SQLite devuelve timestamps UTC sin marcador de zona (`"YYYY-MM-DD HH:MM:SS"`); `new Date(...)` los parseaba como hora local, corriendo todos los cálculos de tiempo por el offset UTC de la máquina (2h en este caso). Se agregó `parseServerDate()`, que interpreta cualquier timestamp sin zona explícita como UTC, y se usa ahora en `relativeTime`, `elapsedSince` y en el umbral de color de `tickElapsed`.
+
+### Changed
+
+- **Auditoría del detector de "agentes activos" (`src/agents-status.ts`).** El matching anterior era: grep de `ps` machine-wide por substring `TASK-...` (sin scope de proyecto), sin verificar que el proceso realmente corriera en el worktree de esa tarea, y sólo tomaba el primer proceso matcheado por tarea (`.find`), descartando el resto en silencio. Ahora `listAgentProcesses` recibe los pares `{taskId, worktree}` de las tareas `in_progress` (vía `/api/agents` → `listTasks(db, { status: "in_progress" })`), verifica cada match leyendo `/proc/:pid/cwd` contra el worktree esperado, agrega todos los procesos que matchean una misma tarea (no sólo el primero) y expone un flag `verified` por proceso. El dashboard ahora muestra cpu/mem agregados, la cantidad de procesos, un badge "unverified" cuando ningún match fue confirmado por cwd, y un badge "no process detected" cuando una tarea `in_progress` no tiene ningún proceso asociado (agente huérfano/caído).
+- Auditado el criterio de creación de logs de requests (`logRequest` en `src/server.ts`): confirmado correcto — suprime cualquier GET del actor `dashboard` (evita el loop de refresh ya arreglado en 0.8.2) y sigue logueando toda mutación y todo request no-dashboard; no se encontraron imprecisiones adicionales.
+
 ## [0.8.2] - 2026-09-02
 
 ### Fixed

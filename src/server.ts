@@ -443,7 +443,9 @@ export function startServer(opts: ServerOptions): { url: string; stop: () => voi
 
         // GET /api/agents — running opencode processes with task matching
         if (path === "/api/agents" && method === "GET") {
-          const agents = await listAgentProcesses();
+          const inProgress = listTasks(db, { status: "in_progress" });
+          const expected = inProgress.map((t) => ({ taskId: t.id, worktree: t.worktree }));
+          const agents = await listAgentProcesses(expected);
           return json(agents);
         }
 

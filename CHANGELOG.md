@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.8.2] - 2026-09-02
+
+### Fixed
+
+- **Flicker en el dashboard mientras una página de spec/task detail estaba abierta.** `logRequest` sólo suprimía un listado exacto de paths (`/api/status`, `/api/specs`, ...); los reads con id (`/api/tasks/:id`, `/api/tasks/:id/worktree-status`) se colaban al log de requests. Cada uno disparaba el evento SSE `refresh`, que hacía que el dashboard se re-renderizara y re-fetchara la misma página, generando un nuevo request logueado — un loop autoalimentado de ~1.5s mientras esa página quedaba abierta. Ahora se suprime cualquier GET del actor `dashboard` (las mutaciones POST/PATCH/DELETE se siguen registrando y disparando refresh para el resto).
+
 ## [0.8.1] - 2026-09-02
 
 ### Added

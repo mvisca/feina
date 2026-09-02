@@ -163,10 +163,15 @@ function deriveSource(actor: string): "Dashboard" | "API" | "Terminal" {
 function logRequest(method: string, path: string, actor: string): void {
   if (path === "/" || path === "/api/events/stream") return;
 
-  // Suppress dashboard's own periodic polling noise only.
-  // Everything else (agent reads, terminal commands, dashboard detail views) is logged.
-  const POLL_PATHS = ["/api/status", "/api/specs", "/api/tasks", "/api/events", "/api/agents"];
-  if (actor === "dashboard" && POLL_PATHS.includes(path)) return;
+  // Suppress dashboard's own reads (list views, detail views, worktree-status
+  // polling). The exact-match list missed per-id paths like /api/tasks/:id and
+  // /api/tasks/:id/worktree-status — those got logged, which fed the SSE
+  // "refresh" broadcast, which made every open dashboard re-render and re-fetch,
+  // logging a new request that fed the next refresh: a self-sustaining loop that
+  // caused the whole page to flicker every ~1.5s while a task/spec detail page
+  // was open. Dashboard mutations (POST/PATCH/DELETE) are never GET, so they
+  // still get logged and still drive refresh for everyone else.
+  if (actor === "dashboard" && method === "GET") return;
 
   const source = deriveSource(actor);
   requestLog.push({

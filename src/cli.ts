@@ -57,7 +57,7 @@ import {
   type OrphanKillResult,
 } from "./server-state";
 
-const VERSION = "0.8.1";
+const VERSION = "0.8.2";
 
 interface ParsedArgs {
   positional: string[];

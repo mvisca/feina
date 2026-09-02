@@ -3,6 +3,26 @@
 All notable changes to this project will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.8.0] - 2026-09-02
+
+### Changed
+
+- **Dashboard rediseñado: el detalle de spec/task pasa de modal overlay a páginas navegables.** Rutas por hash, linkeables y compartibles: `#/`, `#/specs`, `#/tasks`, `#/spec/:id`, `#/task/:id`, `#/new/spec`, `#/new/task`. El botón atrás del navegador funciona.
+- **Eliminados los scrolls anidados.** El documento es el único contenedor con scroll: se quitaron los `max-height` de `.list` (600px), `.markdown` (400px), `.modal` (90vh), la lista de archivos del worktree (120px) y los payloads de eventos (120px). Sobrevive sólo el dropdown de búsqueda (es un menú) y el scroll horizontal de bloques de código y tablas.
+- Breadcrumbs jerárquicos (`feinai / Specs / SPEC-012 / TASK-012-B`) con el crumb actual teñido por el estado real de la entidad.
+- Los filtros viven en la URL (`#/tasks?status=pending`); los stats del header linkean a su lista filtrada.
+- `prompt()` / `confirm()` nativos reemplazados por un diálogo dentro de la página.
+
+### Added
+
+- Soporte de tablas markdown en el renderer del dashboard (antes se veían como texto crudo con pipes).
+- Los IDs en `blocked_by` son links a la task correspondiente.
+
+### Fixed
+
+- `feinai server --down` sólo detiene el servidor registrado de este proyecto, no cualquier proceso en el puerto.
+- Lifecycle de specs huérfanas (SPEC-124) y normalización de estados a inglés.
+
 ## [0.7.2] - 2026-06-22
 
 ### Fixed

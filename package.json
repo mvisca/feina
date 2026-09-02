@@ -1,6 +1,6 @@
 {
   "name": "feinai",
-  "version": "0.7.2",
+  "version": "0.8.0",
   "description": "Task & spec manager for AI agents — parallel worktrees, live dashboard, SDD skills",
   "type": "module",
   "bin": {

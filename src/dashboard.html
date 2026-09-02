@@ -22,29 +22,56 @@
       --green: #5dd39e;
       --red: #ff6b6b;
       --gray: #6c7480;
+      --purple: #a374ff;
+
+      --shell: 1280px;
+      --gutter: 24px;
+
+      --mono: ui-monospace, "SF Mono", Monaco, Menlo, monospace;
+      --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
     }
     * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+    }
     body {
       margin: 0;
       background: var(--bg);
       color: var(--fg);
-      font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      font: 14px/1.55 var(--sans);
+      /* The document is the only scroll container in this app. */
     }
-    code, .mono {
-      font-family: ui-monospace, "SF Mono", Monaco, Menlo, monospace;
-      font-size: 0.92em;
+    code, .mono { font-family: var(--mono); font-size: 0.92em; }
+    a { color: var(--accent); }
+    :focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+      border-radius: 3px;
     }
+
+    .shell { max-width: var(--shell); margin: 0 auto; padding: 0 var(--gutter); }
+
+    /* ================= Header ================= */
     header {
-      padding: 14px 24px;
+      padding: 14px var(--gutter);
       border-bottom: 1px solid var(--border);
+      background: var(--bg-card);
+      position: sticky;
+      top: 0;
+      z-index: 60;
+    }
+    .header-inner {
+      max-width: var(--shell);
+      margin: 0 auto;
       display: flex;
       justify-content: space-between;
       align-items: center;
       gap: 16px;
       flex-wrap: wrap;
-      background: var(--bg-card);
     }
-    header h1 {
+    .brand {
       font-size: 16px;
       margin: 0;
       font-weight: 600;
@@ -52,38 +79,36 @@
       display: flex;
       align-items: center;
       gap: 10px;
+      color: var(--fg);
+      text-decoration: none;
     }
     .live-indicator {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
+      width: 8px; height: 8px; border-radius: 50%;
       background: var(--gray);
       transition: background 0.2s;
+      flex-shrink: 0;
     }
     .live-indicator.connected { background: var(--green); animation: pulse 2s infinite; }
     .live-indicator.disconnected { background: var(--red); }
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.4; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+    .stats { display: flex; gap: 16px; font-size: 13px; flex-wrap: wrap; }
+    .stat {
+      display: flex; align-items: center; gap: 6px;
+      background: none; border: none; padding: 0; font: inherit;
+      color: inherit; cursor: pointer;
     }
-    .stats {
-      display: flex;
-      gap: 16px;
-      font-size: 13px;
-    }
-    .stat { display: flex; align-items: center; gap: 6px; }
+    .stat:hover .label { color: var(--fg); }
     .stat .dot { width: 8px; height: 8px; border-radius: 50%; }
     .stat.pending .dot { background: var(--yellow); }
     .stat.in_progress .dot { background: var(--blue); }
     .stat.completed .dot { background: var(--green); }
     .stat.failed .dot { background: var(--red); }
     .stat .count { font-weight: 600; }
-    .stat .label { color: var(--fg-dim); }
-    .header-actions {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-    }
+    .stat .label { color: var(--fg-dim); transition: color 0.1s; }
+
+    .header-actions { display: flex; gap: 8px; align-items: center; }
+    .search-wrap { position: relative; }
     .search-box {
       background: var(--bg-input);
       border: 1px solid var(--border);
@@ -95,25 +120,102 @@
       transition: border-color 0.1s;
     }
     .search-box:focus { outline: none; border-color: var(--accent); }
-    main {
-      max-width: 1280px;
+    .search-results {
+      position: absolute;
+      top: 100%; right: 0;
+      margin-top: 4px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-strong);
+      border-radius: 6px;
+      /* A menu, not a page region: bounded on purpose so it never covers the app. */
+      max-height: 60vh;
+      overflow: auto;
+      width: 340px;
+      z-index: 70;
+      display: none;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+    }
+    .search-results.visible { display: block; }
+    .search-results .item { padding: 8px 12px; }
+
+    /* ================= Breadcrumb spine =================
+       Each level carries the real status colour of that entity, so the
+       navigation doubles as the status readout. */
+    .spine {
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+      position: sticky;
+      top: 55px;
+      z-index: 50;
+    }
+    .spine-inner {
+      max-width: var(--shell);
       margin: 0 auto;
-      padding: 24px;
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 24px;
+      padding: 9px var(--gutter);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-wrap: wrap;
+      font-size: 12px;
+      min-height: 38px;
     }
+    .crumb {
+      color: var(--fg-dim);
+      text-decoration: none;
+      font-family: var(--mono);
+      letter-spacing: 0.4px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      border-left: 2px solid transparent;
+      transition: color 0.1s, background 0.1s;
+    }
+    .crumb:hover { color: var(--fg); background: var(--bg-card); }
+    .crumb.current {
+      color: var(--fg);
+      font-weight: 600;
+      border-left-color: var(--crumb-tone, var(--border-strong));
+      padding-left: 8px;
+    }
+    .crumb-sep { color: var(--fg-faint); user-select: none; }
+    .spine-right { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+
+    /* ================= Page scaffolding ================= */
+    main { display: block; padding: 24px 0 8px; }
+    .page-head {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .page-title {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: -0.2px;
+      line-height: 1.25;
+    }
+    .page-title code {
+      font-size: 20px;
+      letter-spacing: 0.5px;
+      color: var(--fg);
+    }
+    .page-subtitle { color: var(--fg-dim); font-size: 13px; margin: 6px 0 0; }
+    .page-head-right { margin-left: auto; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr; gap: 24px; align-items: start; }
     @media (min-width: 1024px) {
-      main { grid-template-columns: 1fr 1fr; }
-      .section-wide { grid-column: 1 / -1; }
+      .grid-2 { grid-template-columns: 1fr 1fr; }
+      .span-all { grid-column: 1 / -1; }
     }
+
     section {
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: 8px;
-      overflow: hidden;
+      overflow: hidden; /* clips child corners only — no scrolling here */
     }
-    section h2 {
+    section > h2 {
       margin: 0;
       padding: 12px 16px;
       font-size: 13px;
@@ -126,7 +228,7 @@
       align-items: center;
       gap: 8px;
     }
-    section h2 .count {
+    section > h2 .count {
       background: var(--border);
       color: var(--fg);
       padding: 1px 8px;
@@ -134,31 +236,45 @@
       font-size: 11px;
       font-weight: 600;
     }
-    .list { padding: 4px 0; max-height: 600px; overflow: auto; }
+    .section-body { padding: 16px; }
+
+    /* The list no longer traps a scrollbar — it grows and the page scrolls. */
+    .list { padding: 4px 0; }
     .item {
       padding: 10px 16px;
       border-bottom: 1px solid var(--border);
       cursor: pointer;
       transition: background 0.1s;
+      display: block;
+      width: 100%;
+      text-align: left;
+      background: transparent;
+      border-left: none; border-right: none; border-top: none;
+      color: inherit;
+      font: inherit;
     }
     .item:last-child { border-bottom: none; }
     .item:hover { background: var(--bg-card-hover); }
-    .item-row1 {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 4px;
-      flex-wrap: wrap;
-    }
+    .item-row1 { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: wrap; }
     .item-id { font-weight: 600; }
     .item-subject { color: var(--fg); margin-left: 4px; }
-    .item-meta {
+    .item-meta { font-size: 12px; color: var(--fg-dim); display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+
+    .list-more {
+      display: block;
+      width: 100%;
+      padding: 10px 16px;
+      text-align: center;
+      background: transparent;
+      border: none;
+      border-top: 1px solid var(--border);
+      color: var(--accent);
+      font: inherit;
       font-size: 12px;
-      color: var(--fg-dim);
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
+      cursor: pointer;
     }
+    .list-more:hover { background: var(--bg-card-hover); color: var(--accent-hover); }
+
     .status-tag {
       font-size: 11px;
       padding: 2px 8px;
@@ -167,19 +283,15 @@
       letter-spacing: 0.3px;
       border: 1px solid transparent;
       background: transparent;
+      white-space: nowrap;
     }
     .status-tag.pending { border-color: var(--yellow); color: var(--yellow); }
     .status-tag.in_progress { border-color: var(--blue); color: var(--blue); }
     .status-tag.completed { border-color: var(--green); color: var(--green); }
     .status-tag.failed { border-color: var(--red); color: var(--red); }
     .status-tag.archived { border-color: var(--gray); color: var(--gray); }
-    .badge {
-      font-size: 11px;
-      padding: 1px 6px;
-      border-radius: 3px;
-      background: var(--border);
-      color: var(--fg-dim);
-    }
+
+    .badge { font-size: 11px; padding: 1px 6px; border-radius: 3px; background: var(--border); color: var(--fg-dim); }
     .badge.blocked { border: 1px solid var(--red); color: var(--red); background: transparent; }
     .spec-badge {
       font-size: 11px;
@@ -187,17 +299,18 @@
       border-radius: 4px;
       font-weight: 600;
       letter-spacing: 0.3px;
-      margin-left: 8px;
-      border: 1px solid #a374ff;
-      color: #a374ff;
+      border: 1px solid var(--purple);
+      color: var(--purple);
       background: transparent;
+      font-family: var(--mono);
+      text-decoration: none;
+      white-space: nowrap;
     }
-    .empty {
-      padding: 24px 16px;
-      color: var(--fg-faint);
-      text-align: center;
-      font-style: italic;
-    }
+    a.spec-badge:hover { background: rgba(163, 116, 255, 0.14); }
+
+    .empty { padding: 24px 16px; color: var(--fg-faint); text-align: center; }
+    .empty strong { display: block; color: var(--fg-dim); font-weight: 600; margin-bottom: 4px; }
+
     .filter-bar {
       padding: 8px 16px;
       border-bottom: 1px solid var(--border);
@@ -205,7 +318,6 @@
       gap: 8px;
       flex-wrap: wrap;
     }
-    /* ---- Filter toggles (outline, active fills) ---- */
     .filter-btn {
       background: transparent;
       border: 1px solid var(--border);
@@ -218,52 +330,42 @@
       font-family: inherit;
     }
     .filter-btn:hover { color: var(--fg); border-color: var(--fg-dim); }
-    .filter-btn.active {
-      background: var(--border);
-      color: var(--fg);
-      border-color: var(--border-strong);
-    }
+    .filter-btn.active { background: var(--border); color: var(--fg); border-color: var(--border-strong); }
 
-    /* ---- Status filter colors — outline inactive, filled active ---- */
     .filter-btn[data-status="pending"] { border-color: var(--yellow); color: var(--yellow); }
     .filter-btn[data-status="pending"]:hover { background: rgba(247, 201, 72, 0.12); }
     .filter-btn[data-status="pending"].active { background: var(--yellow); color: var(--bg); border-color: var(--yellow); }
-
     .filter-btn[data-status="in_progress"] { border-color: var(--blue); color: var(--blue); }
     .filter-btn[data-status="in_progress"]:hover { background: rgba(95, 163, 255, 0.12); }
     .filter-btn[data-status="in_progress"].active { background: var(--blue); color: var(--bg); border-color: var(--blue); }
-
     .filter-btn[data-status="completed"] { border-color: var(--green); color: var(--green); }
     .filter-btn[data-status="completed"]:hover { background: rgba(93, 211, 158, 0.12); }
     .filter-btn[data-status="completed"].active { background: var(--green); color: var(--bg); border-color: var(--green); }
-
     .filter-btn[data-status="failed"] { border-color: var(--red); color: var(--red); }
     .filter-btn[data-status="failed"]:hover { background: rgba(255, 107, 107, 0.12); }
     .filter-btn[data-status="failed"].active { background: var(--red); color: var(--bg); border-color: var(--red); }
-
     .filter-btn[data-status="archived"] { border-color: var(--gray); color: var(--gray); }
     .filter-btn[data-status="archived"]:hover { background: rgba(108, 116, 128, 0.15); }
     .filter-btn[data-status="archived"].active { background: var(--gray); color: var(--fg); border-color: var(--gray); }
 
-    /* ---- Action buttons (filled / tailwind solid style) ---- */
     .btn {
       background: var(--bg-card-hover);
       border: 1px solid var(--border-strong);
       color: var(--fg);
-      padding: 4px 10px;
+      padding: 5px 11px;
       border-radius: 4px;
       font-size: 12px;
       cursor: pointer;
       transition: all 0.1s;
       font-family: inherit;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
     }
     .btn:hover { background: var(--border); color: var(--fg); border-color: var(--fg-dim); }
-    .btn.primary {
-      background: var(--accent);
-      color: var(--bg);
-      border-color: var(--accent);
-      font-weight: 600;
-    }
+    .btn.primary { background: var(--accent); color: var(--bg); border-color: var(--accent); font-weight: 600; }
     .btn.primary:hover { background: var(--accent-hover); }
     .btn.danger { background: var(--red); color: var(--bg); border-color: var(--red); }
     .btn.danger:hover { background: #d45c5c; }
@@ -273,116 +375,50 @@
     .btn.yellow:hover { background: #dbb034; }
     .btn.gray { background: var(--gray); color: var(--fg); border-color: var(--gray); }
     .btn.gray:hover { background: #5a6268; }
-    .modal-bg {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.6);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-      z-index: 100;
-    }
-    .modal-bg.visible { display: flex; }
-    @keyframes modal-in {
-      from { opacity: 0; transform: scale(0.96); }
-      to   { opacity: 1; transform: scale(1); }
-    }
-    .modal-bg.visible .modal { animation: modal-in 0.15s ease-out; }
-    .modal {
-      background: var(--bg-card);
-      border: 1px solid var(--border-strong);
-      border-radius: 8px;
-      max-width: 900px;
-      max-height: 90vh;
-      width: 100%;
-      overflow: auto;
-    }
-    .modal-header {
-      padding: 14px 20px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-      position: sticky;
-      top: 0;
-      background: var(--bg-card);
-      z-index: 1;
-    }
-    .modal-close {
-      background: transparent;
-      border: none;
-      color: var(--fg-dim);
-      font-size: 22px;
-      cursor: pointer;
-      padding: 0 4px;
-      line-height: 1;
-    }
-    .modal-close:hover { color: var(--fg); }
-    .modal-section {
-      padding: 14px 20px;
-      border-bottom: 1px solid var(--border);
-    }
-    .modal-section:last-child { border-bottom: none; }
-    .modal-section h3 {
-      margin: 0 0 8px;
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.6px;
-      color: var(--fg-dim);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .modal-actions {
-      padding: 12px 20px;
-      border-bottom: 1px solid var(--border);
+    .btn.ghost { background: transparent; border-color: var(--border); color: var(--fg-dim); }
+    .btn.ghost:hover { color: var(--fg); border-color: var(--fg-dim); background: var(--bg-card-hover); }
+    .btn.sm { padding: 2px 9px; font-size: 11px; }
+
+    .action-bar {
       display: flex;
       gap: 8px;
       flex-wrap: wrap;
-    }
-    .markdown {
-      background: var(--bg);
+      padding: 12px 16px;
+      background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 4px;
-      padding: 14px 16px;
-      max-height: 400px;
-      overflow: auto;
-      line-height: 1.55;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      align-items: center;
     }
-    .markdown h1, .markdown h2, .markdown h3, .markdown h4 {
-      margin: 12px 0 6px;
-      color: var(--fg);
+    .action-bar .spacer { margin-left: auto; }
+
+    /* ================= Markdown ================= */
+    .markdown {
+      line-height: 1.65;
+      max-width: 76ch;
+      /* No height cap: long specs extend the page instead of trapping a scrollbar. */
     }
+    .markdown > *:first-child { margin-top: 0; }
+    .markdown > *:last-child { margin-bottom: 0; }
+    .markdown h1, .markdown h2, .markdown h3, .markdown h4 { margin: 18px 0 8px; color: var(--fg); }
     .markdown h1 { font-size: 18px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
     .markdown h2 { font-size: 16px; color: var(--accent); }
     .markdown h3 { font-size: 14px; color: var(--accent); }
-    .markdown p { margin: 6px 0; }
-    .markdown ul, .markdown ol { margin: 6px 0 6px 24px; }
-    .markdown code {
-      background: var(--border);
-      padding: 1px 5px;
-      border-radius: 3px;
-      font-size: 0.92em;
-    }
-    .markdown pre {
-      background: var(--border);
-      padding: 10px 12px;
-      border-radius: 4px;
-      overflow: auto;
-      margin: 8px 0;
-    }
+    .markdown p { margin: 8px 0; }
+    .markdown ul, .markdown ol { margin: 8px 0 8px 24px; }
+    .markdown li { margin: 3px 0; }
+    .markdown code { background: var(--border); padding: 1px 5px; border-radius: 3px; font-size: 0.92em; }
+    /* Horizontal only — a code block must not become a vertical scroll trap. */
+    .markdown pre { background: var(--border); padding: 12px 14px; border-radius: 6px; overflow-x: auto; margin: 10px 0; }
     .markdown pre code { background: transparent; padding: 0; }
-    .markdown blockquote {
-      border-left: 3px solid var(--accent);
-      padding: 4px 12px;
-      margin: 8px 0;
-      color: var(--fg-dim);
-    }
-    .markdown a { color: var(--accent); }
+    .markdown blockquote { border-left: 3px solid var(--accent); padding: 4px 12px; margin: 10px 0; color: var(--fg-dim); }
     .markdown strong { color: var(--fg); font-weight: 600; }
     .markdown em { color: var(--fg); font-style: italic; }
+    .markdown table { border-collapse: collapse; margin: 12px 0; display: block; overflow-x: auto; width: max-content; max-width: 100%; }
+    .markdown thead th { background: var(--bg-input); color: var(--fg); font-weight: 600; }
+    .markdown th, .markdown td { border: 1px solid var(--border); padding: 5px 10px; text-align: left; }
+
+    /* ================= Events ================= */
     .events-list .item { padding: 8px 16px; cursor: default; }
     .events-list .item:hover { background: transparent; }
     .events-list .item.event-taken     { border-left: 2px solid var(--blue); }
@@ -391,47 +427,32 @@
     .events-list .item.event-created   { border-left: 2px solid var(--accent); }
     .events-list .item.event-released  { border-left: 2px solid var(--gray); }
     .events-list .item.event-started   { border-left: 2px solid var(--yellow); }
-    .event-payload { font-size:11px;color:var(--fg-dim);background:var(--bg-input);border-radius:4px;padding:6px 8px;margin:4px 0 0;overflow:auto;max-height:120px; }
-    .event-type {
-      font-size: 11px;
-      padding: 1px 6px;
-      border-radius: 3px;
-      border: 1px solid transparent;
-      background: transparent;
-      color: var(--fg-dim);
+    .event-payload {
+      font-size: 11px; color: var(--fg-dim);
+      background: var(--bg-input); border-radius: 4px;
+      padding: 8px 10px; margin: 6px 0 0;
+      overflow-x: auto;         /* horizontal only */
+      white-space: pre-wrap;
+      word-break: break-word;
     }
+    .event-type { font-size: 11px; padding: 1px 6px; border-radius: 3px; border: 1px solid transparent; background: transparent; color: var(--fg-dim); }
     .event-type.taken { border-color: var(--blue); color: var(--blue); }
     .event-type.completed { border-color: var(--green); color: var(--green); }
     .event-type.failed { border-color: var(--red); color: var(--red); }
-    .method-badge {
-      font-size: 11px;
-      padding: 1px 6px;
-      border-radius: 3px;
-      border: 1px solid transparent;
-      background: transparent;
-      color: var(--fg-dim);
-      font-weight: 600;
-      text-transform: uppercase;
-    }
+    .method-badge { font-size: 11px; padding: 1px 6px; border-radius: 3px; border: 1px solid transparent; background: transparent; color: var(--fg-dim); font-weight: 600; text-transform: uppercase; }
     .method-badge.get { border-color: var(--green); color: var(--green); }
     .method-badge.post { border-color: var(--blue); color: var(--blue); }
     .method-badge.delete { border-color: var(--red); color: var(--red); }
     .method-badge.patch { border-color: var(--yellow); color: var(--yellow); }
-    .source-badge {
-      font-size: 11px;
-      padding: 1px 6px;
-      border-radius: 3px;
-      font-weight: 600;
-      border: 1px solid transparent;
-      background: transparent;
-    }
+    .source-badge { font-size: 11px; padding: 1px 6px; border-radius: 3px; font-weight: 600; border: 1px solid transparent; background: transparent; }
     .source-badge.api { border-color: var(--blue); color: var(--blue); }
     .source-badge.terminal { border-color: var(--yellow); color: var(--yellow); }
     .source-badge.dashboard { border-color: var(--green); color: var(--green); }
+    .ts { color: var(--fg-dim); margin-left: auto; font-size: 12px; }
+
+    /* ================= Toast ================= */
     .toast {
-      position: fixed;
-      bottom: 24px;
-      right: 24px;
+      position: fixed; bottom: 24px; right: 24px;
       background: var(--bg-card);
       border: 1px solid var(--border-strong);
       border-left: 3px solid var(--green);
@@ -439,7 +460,7 @@
       border-radius: 6px;
       max-width: 360px;
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-      transform: translateY(120%);
+      transform: translateY(140%);
       transition: transform 0.2s ease;
       z-index: 200;
     }
@@ -447,65 +468,45 @@
     .toast.error { border-left-color: var(--red); }
     .toast-title { font-weight: 600; margin-bottom: 4px; }
     .toast-body { color: var(--fg-dim); font-size: 12px; }
-    .search-results {
-      position: absolute;
-      top: 100%;
-      right: 0;
-      margin-top: 4px;
-      background: var(--bg-card);
-      border: 1px solid var(--border-strong);
-      border-radius: 6px;
-      max-height: 400px;
-      overflow: auto;
-      width: 320px;
-      z-index: 50;
-      display: none;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-    }
-    .search-results.visible { display: block; }
-    .search-results .item {
-      padding: 8px 12px;
-    }
-    .search-wrap { position: relative; }
-    footer {
-      text-align: center;
-      padding: 16px;
-      color: var(--fg-faint);
-      font-size: 12px;
-    }
-    textarea, input[type="text"] {
+
+    footer { text-align: center; padding: 28px 16px 32px; color: var(--fg-faint); font-size: 12px; }
+
+    /* ================= Forms ================= */
+    textarea, input[type="text"], select {
       width: 100%;
       background: var(--bg-input);
       border: 1px solid var(--border);
-      border-radius: 4px;
+      border-radius: 6px;
       color: var(--fg);
       padding: 8px 10px;
       font: inherit;
     }
-    textarea { font-family: ui-monospace, monospace; min-height: 120px; resize: vertical; }
-    textarea:focus, input:focus { outline: none; border-color: var(--accent); }
-    .form-row { margin-bottom: 10px; }
-    .form-row label {
-      display: block;
-      font-size: 12px;
-      color: var(--fg-dim);
-      margin-bottom: 4px;
-      text-transform: uppercase;
-      letter-spacing: 0.3px;
+    textarea { font-family: var(--mono); min-height: 160px; resize: vertical; }
+    textarea.tall { min-height: 320px; }
+    textarea:focus, input:focus, select:focus { outline: none; border-color: var(--accent); }
+    .form-row { margin-bottom: 14px; }
+    .form-row label { display: block; font-size: 12px; color: var(--fg-dim); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.3px; }
+    .form-hint { font-size: 12px; color: var(--fg-faint); margin-top: 4px; }
+    .form-grid { display: grid; grid-template-columns: 1fr; gap: 0 16px; }
+    @media (min-width: 720px) { .form-grid.cols-2 { grid-template-columns: 1fr 1fr; } }
+
+    /* ================= Live agents monitor ================= */
+    .monitor-header {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 12px; padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
     }
-    /* ---- Worktree cards ---- */
-    #worktree-cards {
-      max-width: 1280px;
-      margin: 0 auto;
-      padding: 16px 24px 0;
-      display: none;
+    .monitor-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--gray); transition: box-shadow 0.3s ease; }
+    .monitor-dot--idle { background: var(--gray); animation: none; }
+    .monitor-dot--active { background: var(--green); animation: ripple 1.5s ease-out infinite; }
+    @keyframes ripple {
+      0%   { box-shadow: 0 0 0 0 rgba(93, 211, 158, 0.4); }
+      100% { box-shadow: 0 0 0 12px rgba(93, 211, 158, 0); }
     }
-    #worktree-cards.visible { display: block; }
-    .worktree-cards-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-      gap: 12px;
-    }
+    .monitor-title { font-size: 13px; font-weight: 600; letter-spacing: 0.4px; text-transform: uppercase; color: var(--fg-dim); }
+    .monitor-count { font-size: 11px; padding: 1px 7px; border-radius: 999px; background: var(--border); color: var(--fg); font-weight: 600; margin-left: auto; }
+
+    .worktree-cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
     .worktree-card {
       background: var(--bg-card);
       border: 1px solid var(--border);
@@ -513,73 +514,36 @@
       border-radius: 8px;
       padding: 12px 14px;
       font-size: 12px;
+      cursor: pointer;
+      transition: background 0.1s, border-color 0.1s;
+      display: block;
+      text-align: left;
+      color: inherit;
+      font-family: inherit;
+      width: 100%;
     }
+    .worktree-card:hover { background: var(--bg-card-hover); }
     .worktree-card[data-card-state="active"]      { border-left-color: var(--blue); }
     .worktree-card[data-card-state="clean"]       { border-left-color: var(--gray); }
     .worktree-card[data-card-state="error"],
     .worktree-card[data-card-state="removed"]     { border-left-color: var(--red); }
     .worktree-card[data-card-state="merged"]      { border-left-color: var(--green); }
     .worktree-card[data-card-state="not-created"] { border-left-color: var(--yellow); }
-    .worktree-card-header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 8px;
-      flex-wrap: wrap;
-    }
-    .worktree-card-header code {
-      font-weight: 600;
-      font-size: 13px;
-    }
-    .worktree-card-header .owner {
-      color: var(--fg-dim);
-      margin-left: auto;
-    }
-    .worktree-context {
-      width: 100%;
-      margin-top: 4px;
-    }
-    .context-row {
-      display: flex;
-      gap: 8px;
-      font-size: 11px;
-      line-height: 1.6;
-    }
-    .context-label {
-      color: var(--fg-faint);
-      min-width: 110px;
-      flex-shrink: 0;
-    }
-    .context-value {
-      color: var(--fg-dim);
-      font-family: ui-monospace, "SF Mono", Monaco, Menlo, monospace;
-      font-size: 11px;
-      word-break: break-all;
-    }
-    .spec-badge {
-      background: var(--accent);
-      color: #fff;
-      font-size: 10px;
-      padding: 1px 7px;
-      border-radius: 4px;
-      font-weight: 600;
-      letter-spacing: 0.3px;
-    }
-    .elapsed-time {
-      color: var(--fg-dim);
-      font-size: 11px;
-      width: 100%;
-      margin-top: 2px;
-    }
+    .worktree-card.solo { cursor: default; }
+    .worktree-card.solo:hover { background: var(--bg-card); }
+
+    .worktree-card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+    .worktree-card-header code { font-weight: 600; font-size: 13px; }
+    .worktree-card-header .owner { color: var(--fg-dim); margin-left: auto; }
+    .worktree-context { width: 100%; margin-top: 4px; }
+    .context-row { display: flex; gap: 8px; font-size: 11px; line-height: 1.6; }
+    .context-label { color: var(--fg-faint); min-width: 110px; flex-shrink: 0; }
+    .context-value { color: var(--fg-dim); font-family: var(--mono); font-size: 11px; word-break: break-all; }
+    .elapsed-time { color: var(--fg-dim); font-size: 11px; width: 100%; margin-top: 2px; }
     .worktree-state {
-      font-size: 11px;
-      padding: 2px 8px;
-      border-radius: 4px;
-      font-weight: 600;
-      text-transform: lowercase;
-      letter-spacing: 0.3px;
-      border: 1px solid transparent;
-      background: transparent;
+      font-size: 11px; padding: 2px 8px; border-radius: 4px;
+      font-weight: 600; text-transform: lowercase; letter-spacing: 0.3px;
+      border: 1px solid transparent; background: transparent;
     }
     .worktree-state.active { border-color: var(--blue); color: var(--blue); }
     .worktree-state.clean { border-color: var(--gray); color: var(--gray); }
@@ -587,871 +551,117 @@
     .worktree-state.not-created { border-color: var(--yellow); color: var(--yellow); }
     .worktree-state.removed { border-color: var(--red); color: var(--red); }
     .worktree-state.error { border-color: var(--red); color: var(--red); }
-    .worktree-file-list {
-      margin: 6px 0 0;
-      padding: 0;
-      list-style: none;
-      max-height: 120px;
-      overflow: auto;
-    }
-    .worktree-file-list li {
-      font-family: ui-monospace, "SF Mono", Monaco, Menlo, monospace;
-      font-size: 11px;
-      color: var(--fg-dim);
-      padding: 1px 0;
-    }
-    .worktree-process {
-      display: flex;
-      gap: 8px;
-      margin-top: 6px;
-      flex-wrap: wrap;
-    }
-    .worktree-process span {
-      font-family: ui-monospace, "SF Mono", Monaco, Menlo, monospace;
-      font-size: 10px;
-      padding: 1px 6px;
-      border-radius: 3px;
-      background: var(--bg-input);
-      color: var(--fg-dim);
-    }
-    .worktree-commit {
-      margin-top: 6px;
-      font-family: ui-monospace, "SF Mono", Monaco, Menlo, monospace;
-      font-size: 11px;
-      color: var(--fg-faint);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .worktree-monitor-header {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 12px;
-      padding-bottom: 8px;
-      border-bottom: 1px solid var(--border);
-    }
-    .monitor-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--gray);
-      transition: box-shadow 0.3s ease;
-    }
-    .monitor-dot--idle {
-      background: var(--gray);
-      animation: none;
-    }
-    .monitor-dot--active {
-      background: var(--green);
-      animation: ripple 1.5s ease-out infinite;
-    }
-    @keyframes ripple {
-      0% {
-        box-shadow: 0 0 0 0 rgba(93, 211, 158, 0.4);
-      }
-      100% {
-        box-shadow: 0 0 0 12px rgba(93, 211, 158, 0);
-      }
-    }
-    .monitor-title {
-      font-size: 13px;
-      font-weight: 600;
-      letter-spacing: 0.4px;
-      text-transform: uppercase;
-      color: var(--fg-dim);
-    }
-    .monitor-count {
-      font-size: 11px;
-      padding: 1px 7px;
-      border-radius: 999px;
-      background: var(--border);
-      color: var(--fg);
-      font-weight: 600;
-      margin-left: auto;
-    }
-    .worktree-empty {
-      color: var(--fg-faint);
-      font-style: italic;
-      font-size: 13px;
-      padding: 12px 0;
-    }
-    .modal-meta-grid { display: grid; grid-template-columns: 120px 1fr; gap: 4px 12px; font-size: 12px; margin: 8px 0; }
-    .modal-meta-label { color: var(--fg-faint); text-transform: uppercase; letter-spacing: 0.3px; font-size: 11px; padding-top: 2px; }
-    .modal-meta-value { color: var(--fg-dim); word-break: break-all; }
-    .modal-divider { border: none; border-top: 1px solid var(--border); margin: 12px 0; }
-    .confirm-overlay { position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center; }
-    .confirm-box { background:var(--bg-card);border:1px solid var(--border-strong);border-radius:10px;padding:24px;min-width:280px;max-width:380px; }
-    .confirm-message { margin:0 0 16px;font-size:15px; }
-    .confirm-skip { display:flex;align-items:center;gap:8px;font-size:12px;color:var(--fg-dim);margin-bottom:16px;cursor:pointer; }
-    .confirm-actions { display:flex;gap:8px;justify-content:flex-end; }
+    /* Grows with the diff — the page absorbs the height. */
+    .worktree-file-list { margin: 8px 0 0; padding: 0; list-style: none; }
+    .worktree-file-list li { font-family: var(--mono); font-size: 11px; color: var(--fg-dim); padding: 1px 0; word-break: break-all; }
+    .worktree-process { display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+    .worktree-process span { font-family: var(--mono); font-size: 10px; padding: 1px 6px; border-radius: 3px; background: var(--bg-input); color: var(--fg-dim); }
+    .worktree-commit { margin-top: 6px; font-family: var(--mono); font-size: 11px; color: var(--fg-faint); word-break: break-all; }
+    .worktree-empty { color: var(--fg-faint); font-size: 13px; padding: 12px 0; }
+
+    /* ================= Detail meta ================= */
+    .meta-grid { display: grid; grid-template-columns: 140px 1fr; gap: 8px 16px; font-size: 12px; }
+    @media (max-width: 560px) { .meta-grid { grid-template-columns: 1fr; gap: 2px 0; } .meta-label { margin-top: 8px; } }
+    .meta-label { color: var(--fg-faint); text-transform: uppercase; letter-spacing: 0.3px; font-size: 11px; padding-top: 2px; }
+    .meta-value { color: var(--fg-dim); word-break: break-word; }
+
+    /* ================= Confirm dialog =================
+       The one overlay that stays: a blocking decision, not a place to read. */
+    .confirm-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.66); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 24px; }
+    .confirm-box { background: var(--bg-card); border: 1px solid var(--border-strong); border-radius: 10px; padding: 24px; min-width: 280px; max-width: 400px; box-shadow: 0 16px 48px rgba(0,0,0,.5); }
+    .confirm-message { margin: 0 0 16px; font-size: 15px; line-height: 1.5; }
+    .confirm-skip { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--fg-dim); margin-bottom: 16px; cursor: pointer; }
+    .confirm-actions { display: flex; gap: 8px; justify-content: flex-end; }
+    .confirm-input { margin-bottom: 16px; }
   </style>
 </head>
 <body>
   <header>
-    <h1>
-      <span class="live-indicator" id="live"></span>
-      feinai
-    </h1>
-    <div class="stats" id="stats"></div>
-    <div class="header-actions">
-      <div class="search-wrap">
-        <input class="search-box" id="search" placeholder="search specs &amp; tasks..." autocomplete="off">
-        <div class="search-results" id="search-results"></div>
+    <div class="header-inner">
+      <a class="brand" href="#/">
+        <span class="live-indicator" id="live"></span>
+        feinai
+      </a>
+      <div class="stats" id="stats"></div>
+      <div class="header-actions">
+        <div class="search-wrap">
+          <input class="search-box" id="search" placeholder="Search specs and tasks" autocomplete="off" aria-label="Search specs and tasks">
+          <div class="search-results" id="search-results"></div>
+        </div>
       </div>
     </div>
   </header>
 
-  <div id="worktree-cards">
-    <div class="worktree-monitor-header">
-      <span class="monitor-dot"></span>
-      <span class="monitor-title">Live Agents Monitor</span>
-      <span class="monitor-count" id="monitor-count">0</span>
-    </div>
-    <div class="worktree-cards-grid" id="worktree-cards-grid"></div>
-  </div>
+  <nav class="spine" aria-label="Breadcrumb">
+    <div class="spine-inner" id="spine"></div>
+  </nav>
 
   <main>
-    <section>
-      <h2>Specs <span class="count" id="specs-count">0</span><button class="btn" id="new-spec-btn" style="margin-left:auto;padding:2px 10px;font-size:11px;">+ spec</button></h2>
-      <div class="filter-bar" id="spec-filters">
-        <button class="filter-btn active" data-status="">all</button>
-        <button class="filter-btn" data-status="pending"></button>
-        <button class="filter-btn" data-status="in_progress"></button>
-        <button class="filter-btn" data-status="completed"></button>
-        <button class="filter-btn" data-status="archived"></button>
-      </div>
-      <div class="list" id="specs-list"><div class="empty">loading...</div></div>
-    </section>
-
-    <section>
-      <h2>Tasks <span class="count" id="tasks-count">0</span><button class="btn" id="new-task-btn" style="margin-left:auto;padding:2px 10px;font-size:11px;">+ task</button></h2>
-      <div class="filter-bar" id="task-filters">
-        <button class="filter-btn active" data-status="">all</button>
-        <button class="filter-btn" data-status="pending"></button>
-        <button class="filter-btn" data-status="in_progress"></button>
-        <button class="filter-btn" data-status="completed"></button>
-        <button class="filter-btn" data-status="failed"></button>
-      </div>
-      <div class="list" id="tasks-list"><div class="empty">loading...</div></div>
-    </section>
-
-    <section class="section-wide">
-      <h2>Recent events <span class="badge" id="event-count">0</span></h2>
-      <div class="filter-bar" id="event-filters">
-        <button class="filter-btn active" data-event-filter="">all</button>
-        <button class="filter-btn" data-event-filter="event">events</button>
-        <button class="filter-btn" data-event-filter="request">requests</button>
-      </div>
-      <div class="list events-list" id="events-list"><div class="empty">loading...</div></div>
-    </section>
+    <div class="shell" id="app"></div>
   </main>
 
-  <footer>feinai · streaming live · click any item for details &amp; actions · <span id="dash-version">v—</span></footer>
+  <footer>feinai · streaming live · <span id="dash-version">v—</span></footer>
 
-  <div class="modal-bg" id="modal-bg">
-    <div class="modal" id="modal">
-      <div class="modal-header">
-        <strong id="modal-title">...</strong>
-        <button class="modal-close" id="modal-close">×</button>
-      </div>
-      <div id="modal-body"></div>
-    </div>
-  </div>
-
-  <div class="toast" id="toast">
+  <div class="toast" id="toast" role="status" aria-live="polite">
     <div class="toast-title" id="toast-title"></div>
     <div class="toast-body" id="toast-body"></div>
   </div>
 
   <script>
-    const $ = (sel) => document.querySelector(sel);
-    const $$ = (sel) => Array.from(document.querySelectorAll(sel));
-    let activeTaskStatuses = new Set();
-    let activeSpecStatuses = new Set();
-    let activeEventFilter = '';
-    let visibleSpecIds = new Set();
-    let lastDbEvents = [];
+    const $ = (sel, root = document) => root.querySelector(sel);
+    const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
-    function relativeTime(dateStr) {
-      const diff = Date.now() - new Date(dateStr).getTime();
-      if (diff < 60000) return 'just now';
-      if (diff < 3600000) return Math.floor(diff / 60000) + 'm ago';
-      if (diff < 86400000) return Math.floor(diff / 3600000) + 'h ago';
-      return new Date(dateStr).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-    }
-    let liveRequests = [];
-
-    // -------- strings --------
+    // ================= Strings =================
     const UI = {
-      take: "take", done: "mark done", fail: "mark failed",
-      "start-spec": "start", "done-spec": "mark done",
-      confirm_take: "Take this task?",
-      confirm_done: "Mark task as done?",
-      confirm_fail: "Mark task as failed?",
+      take: "Take task",
+      done: "Mark done",
+      fail: "Mark failed",
+      "start-spec": "Start spec",
+      "done-spec": "Mark done",
+      confirm_take: "Take this task? It will be assigned to you and move to In progress.",
+      confirm_done: "Mark this task as done?",
+      confirm_fail: "Mark this task as failed?",
       confirm_start_spec: "Start this spec?",
-      confirm_done_spec: "Mark spec as done?",
-      result_prompt: "Result:",
+      confirm_done_spec: "Mark this spec as done?",
+      result_prompt: "What was the result?",
       result_default: "typecheck ✓ lint ✓ test ✓",
-      error_prompt: "Error message:",
-      pr_prompt: "PR number (or leave empty):",
+      error_prompt: "What went wrong?",
+      pr_prompt: "PR number (leave empty if there is none)",
       skip_confirm: "Don't ask again",
       confirm_btn: "Confirm",
       cancel_btn: "Cancel",
-      missing_fields: "Missing fields",
-      spec_created: "Spec created",
-      task_created: "Task created",
-      task_taken: "Task taken",
-      task_done: "Task done",
-      task_failed: "Task failed",
-      spec_started: "Spec started",
-      spec_done: "Spec done",
-      monitor_empty: "No active tasks",
+      monitor_empty: "No agent is working right now. Take a task to start one.",
     };
     const t = (key) => UI[key] ?? key;
-
     const STATUS_LABELS = {
-      pending: "Ready", in_progress: "In Progress", completed: "Done",
-      failed: "Failed", archived: "Archived",
+      pending: "Ready",
+      in_progress: "In progress",
+      completed: "Done",
+      failed: "Failed",
+      archived: "Archived",
     };
     const statusLabel = (s) => STATUS_LABELS[s] ?? s;
+    const STATUS_TONE = {
+      pending: "var(--yellow)",
+      in_progress: "var(--blue)",
+      completed: "var(--green)",
+      failed: "var(--red)",
+      archived: "var(--gray)",
+    };
+    const OVERVIEW_LIMIT = 8;
 
-    // -------- Confirm modal --------
-    function confirm(message, skipKey) {
-      return new Promise((resolve) => {
-        if (localStorage.getItem("feinai-skip-" + skipKey) === "1") { resolve(true); return; }
-        const overlay = document.createElement("div");
-        overlay.className = "confirm-overlay";
-        overlay.innerHTML = `
-          <div class="confirm-box">
-            <p class="confirm-message">${escapeHtml(message)}</p>
-            <label class="confirm-skip">
-              <input type="checkbox" id="skip-cb"> ${t("skip_confirm")}
-            </label>
-            <div class="confirm-actions">
-              <button id="confirm-cancel" class="btn">${t("cancel_btn")}</button>
-              <button id="confirm-ok" class="btn primary">${t("confirm_btn")}</button>
-            </div>
-          </div>`;
-        document.body.appendChild(overlay);
-        overlay.querySelector("#confirm-ok").onclick = () => {
-          if (overlay.querySelector("#skip-cb").checked) localStorage.setItem("feinai-skip-" + skipKey, "1");
-          document.body.removeChild(overlay); resolve(true);
-        };
-        overlay.querySelector("#confirm-cancel").onclick = () => { document.body.removeChild(overlay); resolve(false); };
-      });
-    }
-
-    // -------- Utilities --------
+    // ================= Utilities =================
     function escapeHtml(s) {
-      return String(s ?? "").replace(/[&<>"']/g, (c) => ({
-        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
-      }[c]));
+      return String(s ?? "").replace(/[&<>"']/g, (c) =>
+        ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
     }
 
-    function toast(title, body, isError = false) {
-      const toastEl = $("#toast");
-      $("#toast-title").textContent = title;
-      $("#toast-body").textContent = body ?? "";
-      toastEl.classList.toggle("error", isError);
-      toastEl.classList.add("visible");
-      clearTimeout(toast._timer);
-      toast._timer = setTimeout(() => toastEl.classList.remove("visible"), 3500);
-    }
-
-    async function api(method, path, body) {
-      const res = await fetch(path, {
-        method,
-        headers: body ? { "Content-Type": "application/json", "X-Feinai-Actor": "dashboard" } : { "X-Feinai-Actor": "dashboard" },
-        body: body ? JSON.stringify(body) : undefined,
-      });
-      if (!res.ok) {
-        let err = "Request failed";
-        try { err = (await res.json()).error ?? err; } catch {}
-        throw new Error(`${res.status}: ${err}`);
-      }
-      const ct = res.headers.get("Content-Type") ?? "";
-      return ct.includes("json") ? await res.json() : await res.text();
-    }
-
-    // -------- Minimal markdown renderer (zero deps) --------
-    function renderMarkdown(text) {
-      if (!text) return "";
-      const lines = text.split("\n");
-      const out = [];
-      let inCode = false;
-      let codeLang = "";
-      let codeBuf = [];
-      let listType = null; // "ul" | "ol" | null
-      let paraBuf = [];
-
-      const flushPara = () => {
-        if (paraBuf.length) {
-          out.push("<p>" + inline(paraBuf.join(" ")) + "</p>");
-          paraBuf = [];
-        }
-      };
-      const flushList = () => {
-        if (listType) {
-          out.push(`</${listType}>`);
-          listType = null;
-        }
-      };
-      const inline = (s) => {
-        return escapeHtml(s)
-          .replace(/\`([^\`]+)\`/g, "<code>$1</code>")
-          .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
-          .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, "<em>$1</em>")
-          .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
-      };
-
-      for (const line of lines) {
-        if (line.startsWith("\`\`\`")) {
-          if (inCode) {
-            flushPara();
-            flushList();
-            out.push(`<pre><code>${escapeHtml(codeBuf.join("\n"))}</code></pre>`);
-            codeBuf = [];
-            inCode = false;
-          } else {
-            flushPara();
-            flushList();
-            codeLang = line.slice(3).trim();
-            inCode = true;
-          }
-          continue;
-        }
-        if (inCode) { codeBuf.push(line); continue; }
-
-        const h = line.match(/^(#{1,6})\s+(.+)$/);
-        if (h) {
-          flushPara();
-          flushList();
-          const lvl = h[1].length;
-          out.push(`<h${lvl}>${inline(h[2])}</h${lvl}>`);
-          continue;
-        }
-
-        const ul = line.match(/^[-*+]\s+(.+)$/);
-        const ol = line.match(/^\d+\.\s+(.+)$/);
-        if (ul || ol) {
-          flushPara();
-          const want = ul ? "ul" : "ol";
-          if (listType !== want) {
-            flushList();
-            out.push(`<${want}>`);
-            listType = want;
-          }
-          out.push(`<li>${inline((ul || ol)[1])}</li>`);
-          continue;
-        }
-
-        if (line.startsWith("> ")) {
-          flushPara();
-          flushList();
-          out.push(`<blockquote>${inline(line.slice(2))}</blockquote>`);
-          continue;
-        }
-
-        if (line.trim() === "") {
-          flushPara();
-          flushList();
-          continue;
-        }
-
-        paraBuf.push(line);
-      }
-      flushPara();
-      flushList();
-      if (inCode) out.push(`<pre><code>${escapeHtml(codeBuf.join("\n"))}</code></pre>`);
-      return out.join("\n");
-    }
-
-    function updateFilterVisuals(selector, activeSet) {
-      const buttons = $$(selector + " .filter-btn");
-      const allBtn = buttons.find((b) => b.dataset.status === "");
-      const individualBtns = buttons.filter((b) => b.dataset.status !== "");
-      if (activeSet.size === 0) {
-        allBtn.classList.add("active");
-        individualBtns.forEach((b) => b.classList.remove("active"));
-      } else {
-        allBtn.classList.remove("active");
-        individualBtns.forEach((b) => {
-          b.classList.toggle("active", activeSet.has(b.dataset.status));
-        });
-      }
-    }
-
-    // -------- Renderers --------
-    function renderStats(stats) {
-      const total = (stats.pending || 0) + (stats.in_progress || 0) + (stats.completed || 0) + (stats.failed || 0);
-      $("#tasks-count").textContent = total;
-      $("#stats").innerHTML = `
-        <div class="stat pending"><span class="dot"></span><span class="count">${stats.pending}</span><span class="label">${statusLabel("pending")}</span></div>
-        <div class="stat in_progress"><span class="dot"></span><span class="count">${stats.in_progress}</span><span class="label">${statusLabel("in_progress")}</span></div>
-        <div class="stat completed"><span class="dot"></span><span class="count">${stats.completed}</span><span class="label">${statusLabel("completed")}</span></div>
-        ${stats.failed ? `<div class="stat failed"><span class="dot"></span><span class="count">${stats.failed}</span><span class="label">${statusLabel("failed")}</span></div>` : ""}
-      `;
-    }
-
-    function renderSpecs(specs) {
-      const filtered = activeSpecStatuses.size > 0 ? specs.filter((s) => activeSpecStatuses.has(s.status)) : specs;
-      visibleSpecIds = new Set(filtered.map(s => s.id));
-      $("#specs-count").textContent = filtered.length;
-      if (!filtered.length) {
-        $("#specs-list").innerHTML = '<div class="empty">no specs match filter</div>';
-        return;
-      }
-      specs = filtered;
-      $("#specs-list").innerHTML = specs.map((s) => `
-        <div class="item" data-spec="${escapeHtml(s.id)}">
-          <div class="item-row1">
-            <span class="status-tag ${escapeHtml(s.status)}">${escapeHtml(statusLabel(s.status))}</span>
-            <code class="item-id">${escapeHtml(s.id)}</code>
-            <span class="item-subject">${escapeHtml(s.title)}</span>
-          </div>
-          <div class="item-meta">
-            <span>${s.task_count} tasks (${s.task_summary.completed}d / ${s.task_summary.in_progress}p / ${s.task_summary.pending}q)</span>
-            ${s.latest_plan_version ? `<span class="badge">plan v${s.latest_plan_version}</span>` : ""}
-            ${s.pr ? `<span class="badge">PR #${escapeHtml(String(s.pr))}</span>` : ""}
-            <button class="btn" style="margin-left:auto;padding:2px 8px;font-size:11px;" data-add-task="${escapeHtml(s.id)}">+ task</button>
-          </div>
-        </div>
-      `).join("");
-      $$("#specs-list .item").forEach((el) =>
-        el.addEventListener("click", (e) => {
-          if (e.target.closest("[data-add-task]")) return;
-          openSpecModal(el.dataset.spec);
-        })
-      );
-      $$("#specs-list [data-add-task]").forEach((btn) =>
-        btn.addEventListener("click", (e) => {
-          e.stopPropagation();
-          openNewTaskModal(btn.dataset.addTask);
-        })
-      );
-    }
-
-    function renderTasks(tasks) {
-      // Cross-filter: if specs are filtered, only show tasks belonging to visible specs
-      let crossFiltered = tasks;
-      if (activeSpecStatuses.size > 0) {
-        crossFiltered = tasks.filter(t => !t.spec_id || visibleSpecIds.has(t.spec_id));
-      }
-      const filtered = activeTaskStatuses.size > 0
-        ? crossFiltered.filter((t) => activeTaskStatuses.has(t.status))
-        : crossFiltered;
-      $("#tasks-count").textContent = filtered.length;
-      if (!filtered.length) {
-        $("#tasks-list").innerHTML = '<div class="empty">no tasks match filter</div>';
-        return;
-      }
-      $("#tasks-list").innerHTML = filtered.map((task) => `
-        <div class="item" data-task="${escapeHtml(task.id)}">
-          <div class="item-row1">
-            <span class="status-tag ${escapeHtml(task.status)}">${escapeHtml(statusLabel(task.status))}</span>
-            <code class="item-id">${escapeHtml(task.id)}</code>
-            <span class="item-subject">${escapeHtml(task.subject)}</span>
-          </div>
-          <div class="item-meta">
-            ${task.spec_id ? `<code>${escapeHtml(task.spec_id)}</code>` : ""}
-            ${task.owner ? `<span>@${escapeHtml(task.owner)}</span>` : ""}
-            ${task.blocked_by?.length ? `<span class="badge blocked">blocked by ${task.blocked_by.map(escapeHtml).join(", ")}</span>` : ""}
-            ${task.packages?.length ? `<span>${task.packages.map(escapeHtml).join(", ")}</span>` : ""}
-          </div>
-        </div>
-      `).join("");
-      $$("#tasks-list .item").forEach((el) =>
-        el.addEventListener("click", () => openTaskModal(el.dataset.task))
-      );
-    }
-
-    function renderCombinedEvents(dbEvents = []) {
-      // Combine persisted business events + live in-memory request log
-      const all = [
-        ...dbEvents.map((e) => ({ ...e, _kind: "business" })),
-        ...liveRequests.map((r) => ({ ...r, _kind: "request" })),
-      ];
-      all.sort((a, b) => new Date(b.created_at || b.timestamp).getTime() - new Date(a.created_at || a.timestamp).getTime());
-      const filtered = activeEventFilter
-        ? all.filter((e) => e._kind === activeEventFilter)
-        : all;
-      const combined = filtered.slice(0, 50);
-
-      $("#event-count").textContent = combined.length;
-      if (!combined.length) {
-        $("#events-list").innerHTML = '<div class="empty">no events yet</div>';
-        return;
-      }
-
-      $("#events-list").innerHTML = combined.map((e) => {
-        if (e._kind === "request") {
-          return `
-            <div class="item">
-              <div class="item-row1">
-                <span class="method-badge ${escapeHtml(e.method.toLowerCase())}">${escapeHtml(e.method)}</span>
-                <code>${escapeHtml(e.path)}</code>
-                <span class="source-badge ${escapeHtml(e.source.toLowerCase())}">${escapeHtml(e.source)}</span>
-                <span style="color: var(--fg-dim); margin-left: auto;">${relativeTime(e.created_at ?? e.ts ?? e.timestamp)}</span>
-              </div>
-              <div class="item-meta">
-                <span>${escapeHtml(e.actor)}</span>
-              </div>
-            </div>
-          `;
-        }
-        const payload = (() => { try { return e.payload ? JSON.parse(e.payload) : null; } catch { return e.payload || null; } })();
-        return `
-          <div class="item event-${escapeHtml(e.event_type)}">
-            <div class="item-row1">
-              <span class="event-type ${escapeHtml(e.event_type)}">${escapeHtml(e.event_type)}</span>
-              <code>${escapeHtml(e.entity_type)}/${escapeHtml(e.entity_id)}</code>
-              <span style="color: var(--fg-dim); margin-left: auto;">${relativeTime(e.created_at ?? e.ts)}</span>
-            </div>
-            <div class="item-meta">
-              ${e.actor ? `<span>${escapeHtml(e.actor)}</span>` : ""}
-              ${payload ? `<details><summary style="cursor:pointer;color:var(--fg-faint);font-size:11px;list-style:none;">payload ▸</summary><pre class="event-payload">${escapeHtml(JSON.stringify(payload, null, 2))}</pre></details>` : ""}
-            </div>
-          </div>
-        `;
-      }).join("");
-    }
-
-    // -------- Modals --------
-    function openModal() {
-      $("#modal-bg").classList.add("visible");
-    }
-    function closeModal() {
-      $("#modal-bg").classList.remove("visible");
-    }
-    function setModalBody(html) {
-      $("#modal-body").innerHTML = html;
-    }
-
-    async function openSpecModal(id) {
-      $("#modal-title").innerHTML = `<code>${escapeHtml(id)}</code> · loading...`;
-      setModalBody('<div class="empty">loading...</div>');
-      openModal();
-      try {
-        const data = await api("GET", `/api/specs/${encodeURIComponent(id)}`);
-        const { spec, tasks, latest_plan } = data;
-        $("#modal-title").innerHTML = `
-          <code>${escapeHtml(spec.id)}</code>
-          <span class="status-tag ${escapeHtml(spec.status)}" style="margin-left: 8px;">${escapeHtml(statusLabel(spec.status))}</span>
-          <span style="margin-left: 8px;">${escapeHtml(spec.title)}</span>
-        `;
-        const actions = [];
-        if (spec.status === "pending") actions.push(`<button class="btn yellow" data-action="start-spec" data-id="${escapeHtml(spec.id)}">start</button>`);
-        if (spec.status === "in_progress") actions.push(`<button class="btn success" data-action="done-spec" data-id="${escapeHtml(spec.id)}">mark done</button>`);
-        if (spec.status !== "archived") actions.push(`<button class="btn gray" data-action="archive-spec" data-id="${escapeHtml(spec.id)}">archive</button>`);
-        if (spec.status === "archived") actions.push(`<button class="btn yellow" data-action="unarchive-spec" data-id="${escapeHtml(spec.id)}">unarchive</button>`);
-        actions.push(`<button class="btn danger" data-action="delete-spec" data-id="${escapeHtml(spec.id)}">delete</button>`);
-        setModalBody(`
-          ${actions.length ? `<div class="modal-actions">${actions.join("")}</div>` : ""}
-          <hr class="modal-divider">
-          ${spec.content ? `
-            <div class="modal-section">
-              <h3>Spec content <span class="badge">${spec.content.length}B</span></h3>
-              <div class="markdown">${renderMarkdown(spec.content)}</div>
-            </div>` : ""}
-          ${latest_plan ? `
-            <div class="modal-section">
-              <h3>Plan v${latest_plan.version} <span class="badge">${latest_plan.content.length}B</span></h3>
-              <div class="markdown">${renderMarkdown(latest_plan.content)}</div>
-            </div>` : ""}
-          <hr class="modal-divider">
-          <div class="modal-section">
-            <h3>Tasks <span class="badge">${tasks.length}</span></h3>
-            <div>${tasks.length === 0 ? '<div class="empty">no tasks</div>' : tasks.map((task) => `
-              <div class="item" data-task="${escapeHtml(task.id)}" style="cursor: pointer;">
-                <div class="item-row1">
-            <span class="status-tag ${escapeHtml(task.status)}">${escapeHtml(statusLabel(task.status))}</span>
-                  <code class="item-id">${escapeHtml(task.id)}</code>
-                  <span class="item-subject">${escapeHtml(task.subject)}</span>
-                </div>
-                <div class="item-meta">
-                  ${task.owner ? `<span>@${escapeHtml(task.owner)}</span>` : ""}
-                  ${task.blocked_by?.length ? `<span class="badge blocked">blocked by ${task.blocked_by.map(escapeHtml).join(", ")}</span>` : ""}
-                </div>
-              </div>
-            `).join("")}</div>
-          </div>
-        `);
-        wireModalActions();
-      } catch (err) {
-        setModalBody(`<div class="empty">error: ${escapeHtml(err.message)}</div>`);
-      }
-    }
-
-    async function openTaskModal(id) {
-      $("#modal-title").innerHTML = `<code>${escapeHtml(id)}</code> · loading...`;
-      setModalBody('<div class="empty">loading...</div>');
-      openModal();
-      try {
-        const taskData = await api("GET", `/api/tasks/${encodeURIComponent(id)}`);
-        $("#modal-title").innerHTML = `
-          <code>${escapeHtml(taskData.id)}</code>
-          <span class="status-tag ${escapeHtml(taskData.status)}" style="margin-left: 8px;">${escapeHtml(statusLabel(taskData.status))}</span>
-          ${taskData.spec_id ? `<code class="spec-badge">${escapeHtml(taskData.spec_id)}</code>` : ""}
-          <span style="margin-left: 8px;">${escapeHtml(taskData.subject)}</span>
-        `;
-        const actions = [];
-        if (taskData.status === "pending") {
-          actions.push(`<button class="btn yellow" data-action="take" data-id="${escapeHtml(taskData.id)}">${t("take")}</button>`);
-        }
-        if (taskData.status === "in_progress") {
-          actions.push(`<button class="btn success" data-action="done" data-id="${escapeHtml(taskData.id)}">${t("done")}</button>`);
-          actions.push(`<button class="btn danger" data-action="fail" data-id="${escapeHtml(taskData.id)}">${t("fail")}</button>`);
-          actions.push(`<button class="btn" data-action="release" data-id="${escapeHtml(taskData.id)}">↩ release</button>`);
-        }
-        if (taskData.status === "completed" || taskData.status === "failed") {
-          actions.push(`<button class="btn" data-action="reopen" data-id="${escapeHtml(taskData.id)}">↩ reopen</button>`);
-        }
-        if (taskData.spec_id) {
-          actions.unshift(`<button class="btn" data-action="back-to-spec" data-spec="${escapeHtml(taskData.spec_id)}">← ${escapeHtml(taskData.spec_id)}</button>`);
-        }
-        const metaRows = [
-          taskData.owner        ? `<span class="modal-meta-label">Owner</span><span class="modal-meta-value">${escapeHtml(taskData.owner)}</span>` : "",
-          taskData.taken_at     ? `<span class="modal-meta-label">Taken</span><span class="modal-meta-value">${escapeHtml(taskData.taken_at)}</span>` : "",
-          taskData.completed_at ? `<span class="modal-meta-label">Completed</span><span class="modal-meta-value">${escapeHtml(taskData.completed_at)}</span>` : "",
-          taskData.worktree     ? `<span class="modal-meta-label">Worktree</span><span class="modal-meta-value"><code>${escapeHtml(taskData.worktree)}</code></span>` : "",
-          taskData.blocked_by?.length ? `<span class="modal-meta-label">Blocked by</span><span class="modal-meta-value">${taskData.blocked_by.map((id) => `<code>${escapeHtml(id)}</code>`).join(", ")}</span>` : "",
-          taskData.packages?.length   ? `<span class="modal-meta-label">Packages</span><span class="modal-meta-value">${taskData.packages.map((p) => `<code>${escapeHtml(p)}</code>`).join(", ")}</span>` : "",
-          taskData.quality_gates?.length ? `<span class="modal-meta-label">Quality gates</span><span class="modal-meta-value">${taskData.quality_gates.map((g) => `<code>${escapeHtml(g)}</code>`).join("<br>")}</span>` : "",
-        ].filter(Boolean).join("");
-        setModalBody(`
-          ${actions.length ? `<div class="modal-actions">${actions.join("")}</div>` : ""}
-          <hr class="modal-divider">
-          <div class="modal-section">
-            <h3>Metadata</h3>
-            <div class="modal-meta-grid">${metaRows}</div>
-          </div>
-          <hr class="modal-divider">
-          ${taskData.description ? `
-            <div class="modal-section">
-              <h3>Description / workplan</h3>
-              <div class="markdown">${renderMarkdown(taskData.description)}</div>
-            </div>` : ""}
-          ${taskData.result ? `<div class="modal-section"><h3>Result</h3><div class="markdown">${renderMarkdown(taskData.result)}</div></div>` : ""}
-          ${taskData.error ? `<div class="modal-section"><h3>Error</h3><div class="markdown" style="color: var(--red);">${escapeHtml(taskData.error)}</div></div>` : ""}
-        `);
-        wireModalActions();
-      } catch (err) {
-        setModalBody(`<div class="empty">error: ${escapeHtml(err.message)}</div>`);
-      }
-    }
-
-    async function openNewSpecModal() {
-      $("#modal-title").innerHTML = "New spec";
-      let nextId = "SPEC-001";
-      try {
-        const specs = await api("GET", "/api/specs");
-        const nums = specs.map((s) => parseInt(s.id.replace(/\D/g, ""), 10)).filter(Boolean);
-        const max = nums.length ? Math.max(...nums) : 0;
-        nextId = `SPEC-${String(max + 1).padStart(3, "0")}`;
-      } catch {}
-      setModalBody(`
-        <div class="modal-section">
-          <div class="form-row">
-            <label>id</label>
-            <input type="text" id="ns-id" autocomplete="off" value="${escapeHtml(nextId)}">
-          </div>
-          <div class="form-row">
-            <label>title</label>
-            <input type="text" id="ns-title" autocomplete="off">
-          </div>
-          <div class="form-row">
-            <label>content (markdown — optional)</label>
-            <textarea id="ns-content" placeholder="# Spec content...&#10;&#10;Goal: ..."></textarea>
-          </div>
-          <div class="modal-actions" style="padding: 0; border: none;">
-            <button class="btn primary" data-action="create-spec">create spec</button>
-          </div>
-        </div>
-      `);
-      openModal();
-      wireModalActions();
-      setTimeout(() => $("#ns-title")?.focus(), 50);
-    }
-
-    async function openNewTaskModal(preSpecId = "") {
-      $("#modal-title").innerHTML = "New task";
-      let nextId = "TASK-001-A";
-      let specOptions = '<option value="">— none —</option>';
-      try {
-        const [tasks, specs] = await Promise.all([api("GET", "/api/tasks"), api("GET", "/api/specs")]);
-        const nums = tasks.map((tk) => {
-          const m = tk.id.match(/^TASK-(\d+)/);
-          return m ? parseInt(m[1], 10) : 0;
-        }).filter(Boolean);
-        const max = nums.length ? Math.max(...nums) : 0;
-        nextId = `TASK-${String(max + 1).padStart(3, "0")}-A`;
-        specOptions = '<option value="">— none —</option>' +
-          specs.map((s) => `<option value="${escapeHtml(s.id)}" ${s.id === preSpecId ? "selected" : ""}>${escapeHtml(s.id)} — ${escapeHtml(s.title)}</option>`).join("");
-      } catch {}
-      setModalBody(`
-        <div class="modal-section">
-          <div class="form-row">
-            <label>Belongs to</label>
-            <select id="nt-spec" style="width:100%;background:var(--bg-input);color:var(--fg);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font:inherit;">${specOptions}</select>
-          </div>
-          <div class="form-row">
-            <label>id</label>
-            <input type="text" id="nt-id" autocomplete="off" value="${escapeHtml(nextId)}">
-          </div>
-          <div class="form-row">
-            <label>subject</label>
-            <input type="text" id="nt-subject" autocomplete="off">
-          </div>
-          <div class="form-row">
-            <label>description / workplan (markdown)</label>
-            <textarea id="nt-desc"></textarea>
-          </div>
-          <div class="form-row">
-            <label>packages (comma-separated)</label>
-            <input type="text" id="nt-packages" autocomplete="off" placeholder="@app/auth, @app/users">
-          </div>
-          <div class="form-row">
-            <label>quality gates (one per line)</label>
-            <textarea id="nt-gates" placeholder="pnpm typecheck&#10;pnpm test -- --run"></textarea>
-          </div>
-          <div class="modal-actions" style="padding: 0; border: none;">
-            <button class="btn primary" data-action="create-task">create task</button>
-          </div>
-        </div>
-      `);
-      openModal();
-      wireModalActions();
-      setTimeout(() => $("#nt-subject")?.focus(), 50);
-    }
-
-    // -------- Action handlers --------
-    function wireModalActions() {
-      $$("#modal-body [data-action]").forEach((btn) => {
-        btn.addEventListener("click", async () => {
-          const action = btn.dataset.action;
-          const id = btn.dataset.id;
-          try {
-            if (action === "take") {
-              if (!await confirm(t("confirm_take"), "take")) return;
-              await api("POST", `/api/tasks/${encodeURIComponent(id)}/take`, {});
-              toast(t("task_taken"), id);
-              await openTaskModal(id);
-            } else if (action === "done") {
-              if (!await confirm(t("confirm_done"), "done")) return;
-              const result = prompt(t("result_prompt"), t("result_default"));
-              if (result == null) return;
-              await api("POST", `/api/tasks/${encodeURIComponent(id)}/done`, { result });
-              toast(t("task_done"), id);
-              await openTaskModal(id);
-            } else if (action === "fail") {
-              if (!await confirm(t("confirm_fail"), "fail")) return;
-              const error = prompt(t("error_prompt"));
-              if (error == null) return;
-              await api("POST", `/api/tasks/${encodeURIComponent(id)}/fail`, { error });
-              toast(t("task_failed"), id);
-              await openTaskModal(id);
-            } else if (action === "release") {
-              if (!await confirm("Release task back to pending?", "release")) return;
-              await api("POST", `/api/tasks/${encodeURIComponent(id)}/release`, {});
-              toast("Task released", id);
-              await openTaskModal(id);
-            } else if (action === "reopen") {
-              if (!await confirm("Reopen task to pending?", "reopen")) return;
-              await api("POST", `/api/tasks/${encodeURIComponent(id)}/reopen`, {});
-              toast("Task reopened", id);
-              await openTaskModal(id);
-            } else if (action === "start-spec") {
-              if (!await confirm(t("confirm_start_spec"), "start-spec")) return;
-              await api("POST", `/api/specs/${encodeURIComponent(id)}/start`, {});
-              toast(t("spec_started"), id);
-              await openSpecModal(id);
-            } else if (action === "done-spec") {
-              if (!await confirm(t("confirm_done_spec"), "done-spec")) return;
-              const pr = prompt(t("pr_prompt")) ?? undefined;
-              await api("POST", `/api/specs/${encodeURIComponent(id)}/done`, pr ? { pr } : {});
-              toast(t("spec_done"), id);
-              await openSpecModal(id);
-            } else if (action === "archive-spec") {
-              if (!await confirm("Archive this spec? Its tasks will leave the active task list.", "archive-spec")) return;
-              await api("POST", `/api/specs/${encodeURIComponent(id)}/archive`, {});
-              toast("Spec archived", id);
-              await openSpecModal(id);
-              await refresh();
-            } else if (action === "unarchive-spec") {
-              if (!await confirm("Restore this spec to active work?", "unarchive-spec")) return;
-              await api("POST", `/api/specs/${encodeURIComponent(id)}/unarchive`, {});
-              toast("Spec unarchived", id);
-              await openSpecModal(id);
-              await refresh();
-            } else if (action === "delete-spec") {
-              if (!await confirm("WARNING: This will delete the spec and ALL its tasks permanently. Continue?", "delete-spec")) return;
-              await api("DELETE", `/api/specs/${encodeURIComponent(id)}`);
-              toast("Spec deleted", id);
-              closeModal();
-              await refresh();
-            } else if (action === "create-spec") {
-              const body = {
-                id: $("#ns-id").value.trim(),
-                title: $("#ns-title").value.trim(),
-                content: $("#ns-content").value || undefined,
-              };
-              if (!body.id || !body.title) return toast("Missing fields", "id and title required", true);
-              await api("POST", `/api/specs`, body);
-              toast("Spec created", body.id);
-              closeModal();
-            } else if (action === "create-task") {
-              const packages = $("#nt-packages").value.split(",").map((s) => s.trim()).filter(Boolean);
-              const gates = $("#nt-gates").value.split("\n").map((s) => s.trim()).filter(Boolean);
-              const body = {
-                id: $("#nt-id").value.trim(),
-                subject: $("#nt-subject").value.trim(),
-                description: $("#nt-desc").value || undefined,
-                spec_id: $("#nt-spec").value.trim() || undefined,
-                packages: packages.length ? packages : undefined,
-                quality_gates: gates.length ? gates : undefined,
-              };
-              if (!body.id || !body.subject) return toast("Missing fields", "id and subject required", true);
-              await api("POST", `/api/tasks`, body);
-              toast("Task created", body.id);
-              closeModal();
-            } else if (action === "back-to-spec") {
-              const specId = btn.dataset.spec;
-              if (specId) openSpecModal(specId);
-            }
-          } catch (err) {
-            toast("Error", err.message, true);
-          }
-        });
-      });
-      // delegate clicks on nested task items in spec modal
-      $$("#modal-body .item[data-task]").forEach((el) => {
-        el.addEventListener("click", (e) => {
-          if (e.target.closest("[data-action]")) return;
-          openTaskModal(el.dataset.task);
-        });
-      });
-    }
-
-    // -------- Worktree cards --------
-    let appContext = {};
-    let worktreePollTimer = null;
-    let worktreeElapsedTimer = null;
-    let currentInProgressIds = [];
-    let agentProcesses = [];
-
-    function parseOwner(owner) {
-      if (!owner) return null;
-      const [type, pid, user] = owner.split(':');
-      return { type, pid, user };
-    }
-
-    function worktreeStateBadge(data) {
-      if (data.error) return { cls: "error", text: "error" };
-      if (data.merged) return { cls: "merged", text: "merged" };
-      if (!data.exists) return { cls: data.branch === null && data.lastCommit === null ? "not-created" : "removed", text: data.branch === null && data.lastCommit === null ? "not created" : "removed" };
-      if (data.gitClean) return { cls: "clean", text: "no changes" };
-      return { cls: "active", text: "active" };
+    function relativeTime(dateStr) {
+      const diff = Date.now() - new Date(dateStr).getTime();
+      if (diff < 60000) return "just now";
+      if (diff < 3600000) return Math.floor(diff / 60000) + "m ago";
+      if (diff < 86400000) return Math.floor(diff / 3600000) + "h ago";
+      return new Date(dateStr).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
     }
 
     function elapsedSince(iso) {
@@ -1463,166 +673,965 @@
       return m ? `${m}m ${s}s` : `${s}s`;
     }
 
-    function renderWorktreeCards(tasks) {
-      const inProgress = tasks.filter((t) => t.status === "in_progress");
-      const nextIds = inProgress.map((t) => t.id);
-      const container = $("#worktree-cards");
-      const grid = $("#worktree-cards-grid");
-      const countEl = $("#monitor-count");
-      container.classList.add("visible");
-      countEl.textContent = String(inProgress.length);
+    let toastTimer = null;
+    function toast(title, body, isError = false) {
+      const el = $("#toast");
+      $("#toast-title").textContent = title;
+      $("#toast-body").textContent = body ?? "";
+      el.classList.toggle("error", isError);
+      el.classList.add("visible");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => el.classList.remove("visible"), 3500);
+    }
 
-      // Toggle presence indicator: idle (gray) vs active (green + ripple)
-      const dot = document.querySelector('.monitor-dot');
-      if (dot) {
-        dot.classList.toggle('monitor-dot--active', inProgress.length > 0);
-        dot.classList.toggle('monitor-dot--idle', inProgress.length === 0);
+    async function api(method, path, body) {
+      const res = await fetch(path, {
+        method,
+        headers: body
+          ? { "Content-Type": "application/json", "X-Feinai-Actor": "dashboard" }
+          : { "X-Feinai-Actor": "dashboard" },
+        body: body ? JSON.stringify(body) : undefined,
+      });
+      if (!res.ok) {
+        let err = "Request failed";
+        try { err = (await res.json()).error ?? err; } catch {}
+        throw new Error(`${res.status}: ${err}`);
       }
+      const ct = res.headers.get("Content-Type") ?? "";
+      return ct.includes("json") ? await res.json() : await res.text();
+    }
 
-      if (!inProgress.length) {
-        grid.innerHTML = `<div class="worktree-empty">${t("monitor_empty")}</div>`;
-        if (worktreePollTimer) { clearInterval(worktreePollTimer); worktreePollTimer = null; }
-        if (worktreeElapsedTimer) { clearInterval(worktreeElapsedTimer); worktreeElapsedTimer = null; }
-        currentInProgressIds = [];
-        return;
-      }
-
-      // Diff: remove cards for tasks no longer in_progress
-      const existingCards = grid.querySelectorAll('[data-worktree-task]');
-      for (const card of existingCards) {
-        const taskId = card.getAttribute('data-worktree-task');
-        if (!nextIds.includes(taskId)) {
-          card.remove();
+    // ================= Confirm dialog =================
+    function confirmDialog(message, skipKey, promptField) {
+      return new Promise((resolve) => {
+        if (!promptField && skipKey && localStorage.getItem("feinai-skip-" + skipKey) === "1") {
+          resolve({ ok: true, value: "" });
+          return;
         }
-      }
-
-      // Diff: add cards for newly in_progress tasks only
-      const existingIds = new Set(
-        Array.from(grid.querySelectorAll('[data-worktree-task]')).map((c) => c.getAttribute('data-worktree-task'))
-      );
-      for (const task of inProgress) {
-        if (existingIds.has(task.id)) continue;
-        const parsedOwner = parseOwner(task.owner);
-        const ownerHtml = parsedOwner
-          ? `<span class="owner" data-owner-type="${escapeHtml(parsedOwner.type)}" data-owner-pid="${escapeHtml(parsedOwner.pid)}">${escapeHtml(parsedOwner.type)} · pid ${escapeHtml(parsedOwner.pid)}</span>`
-          : '';
-        const workingDir = task.worktree || appContext.repoRoot || "—";
-        const repoName = appContext.repoName || "—";
-        const feinaiLoc = appContext.feinaiPath || "—";
-        const card = document.createElement('div');
-        card.className = 'worktree-card';
-        card.setAttribute('data-worktree-task', task.id);
-        card.innerHTML = `
-          <div class="worktree-card-header">
-            <code>${escapeHtml(task.id)}</code>
-            ${task.spec_id ? `<span class="spec-badge">${escapeHtml(task.spec_id)}</span>` : ""}
-            ${ownerHtml}
-            <span class="worktree-state" data-state-badge="${escapeHtml(task.id)}">...</span>
-            <div class="worktree-context">
-              <div class="context-row"><span class="context-label">Working directory</span><span class="context-value">${escapeHtml(workingDir)}</span></div>
-              <div class="context-row"><span class="context-label">Repo</span><span class="context-value">${escapeHtml(repoName)}</span></div>
-              <div class="context-row"><span class="context-label">.feinai</span><span class="context-value">${escapeHtml(feinaiLoc)}</span></div>
+        const overlay = document.createElement("div");
+        overlay.className = "confirm-overlay";
+        overlay.innerHTML = `
+          <div class="confirm-box" role="dialog" aria-modal="true">
+            <p class="confirm-message">${escapeHtml(message)}</p>
+            ${promptField ? `<input type="text" class="confirm-input" id="confirm-value" value="${escapeHtml(promptField.value ?? "")}" placeholder="${escapeHtml(promptField.placeholder ?? "")}">` : ""}
+            ${skipKey && !promptField ? `<label class="confirm-skip"><input type="checkbox" id="skip-cb"> ${t("skip_confirm")}</label>` : ""}
+            <div class="confirm-actions">
+              <button id="confirm-cancel" class="btn">${t("cancel_btn")}</button>
+              <button id="confirm-ok" class="btn primary">${t("confirm_btn")}</button>
             </div>
-            <span class="elapsed-time" data-elapsed="${escapeHtml(task.taken_at ?? '')}"></span>
-          </div>
-          <div class="worktree-process" data-process="${escapeHtml(task.id)}"></div>
-          <ul class="worktree-file-list" data-files="${escapeHtml(task.id)}"></ul>
-          <div class="worktree-commit" data-commit="${escapeHtml(task.id)}"></div>
-        `;
-        grid.appendChild(card);
-      }
-
-      // Restart polling if the task list changed
-      const idsChanged = nextIds.length !== currentInProgressIds.length ||
-        nextIds.some((id, i) => id !== currentInProgressIds[i]);
-      if (idsChanged || !worktreePollTimer) {
-        currentInProgressIds = nextIds;
-        if (worktreePollTimer) clearInterval(worktreePollTimer);
-        pollWorktreeStatus(currentInProgressIds);
-        worktreePollTimer = setInterval(() => pollWorktreeStatus(currentInProgressIds), 5000);
-      }
-
-      // Elapsed ticker: update all [data-elapsed] spans every second
-      if (inProgress.length && !worktreeElapsedTimer) {
-        worktreeElapsedTimer = setInterval(() => {
-          document.querySelectorAll('[data-elapsed]').forEach((el) => {
-            const iso = el.getAttribute('data-elapsed');
-            if (iso) {
-              el.textContent = elapsedSince(iso);
-              const minutes = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
-              if (minutes >= 60) el.style.color = 'var(--red)';
-              else if (minutes >= 30) el.style.color = 'var(--yellow)';
-              else el.style.color = 'var(--fg-dim)';
-            } else {
-              el.textContent = '';
-            }
-          });
-        }, 1000);
-        // Immediate first update
-        document.querySelectorAll('[data-elapsed]').forEach((el) => {
-          const iso = el.getAttribute('data-elapsed');
-          if (iso) {
-            el.textContent = elapsedSince(iso);
-            const minutes = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
-            if (minutes >= 60) el.style.color = 'var(--red)';
-            else if (minutes >= 30) el.style.color = 'var(--yellow)';
-            else el.style.color = 'var(--fg-dim)';
-          } else {
-            el.textContent = '';
+          </div>`;
+        document.body.appendChild(overlay);
+        const cleanup = () => { document.removeEventListener("keydown", onKey); overlay.remove(); };
+        const finish = (ok) => {
+          const value = $("#confirm-value", overlay)?.value ?? "";
+          if (ok && $("#skip-cb", overlay)?.checked && skipKey) {
+            localStorage.setItem("feinai-skip-" + skipKey, "1");
           }
-        });
+          cleanup();
+          resolve({ ok, value });
+        };
+        const onKey = (e) => {
+          if (e.key === "Escape") finish(false);
+          if (e.key === "Enter" && promptField) finish(true);
+        };
+        document.addEventListener("keydown", onKey);
+        $("#confirm-ok", overlay).onclick = () => finish(true);
+        $("#confirm-cancel", overlay).onclick = () => finish(false);
+        overlay.addEventListener("click", (e) => { if (e.target === overlay) finish(false); });
+        setTimeout(() => ($("#confirm-value", overlay) ?? $("#confirm-ok", overlay)).focus(), 30);
+      });
+    }
+
+    // ================= Minimal markdown renderer (zero deps) =================
+    function renderMarkdown(text) {
+      if (!text) return "";
+      const lines = text.split("\n");
+      const out = [];
+      let inCode = false;
+      let codeBuf = [];
+      let listType = null;
+      let paraBuf = [];
+      const inline = (s) => escapeHtml(s)
+        .replace(/\`([^\`]+)\`/g, "<code>$1</code>")
+        .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+        .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, "<em>$1</em>")
+        .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+      const flushPara = () => { if (paraBuf.length) { out.push("<p>" + inline(paraBuf.join(" ")) + "</p>"); paraBuf = []; } };
+      const flushList = () => { if (listType) { out.push(`</${listType}>`); listType = null; } };
+
+      const isTableDivider = (s) => /^\s*\|?[\s:|-]*-[\s:|-]*\|?\s*$/.test(s) && s.includes("-") && s.includes("|");
+      const cells = (s) => s.replace(/^\s*\|/, "").replace(/\|\s*$/, "").split("|").map((c) => c.trim());
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const fence = line.match(/^\s*\`\`\`(.*)$/);
+        if (fence) {
+          if (inCode) {
+            out.push("<pre><code>" + escapeHtml(codeBuf.join("\n")) + "</code></pre>");
+            codeBuf = []; inCode = false;
+          } else {
+            flushPara(); flushList(); inCode = true;
+          }
+          continue;
+        }
+        if (inCode) { codeBuf.push(line); continue; }
+
+        const heading = line.match(/^(#{1,6})\s+(.*)$/);
+        if (heading) {
+          flushPara(); flushList();
+          const lvl = Math.min(heading[1].length, 4);
+          out.push(`<h${lvl}>${inline(heading[2])}</h${lvl}>`);
+          continue;
+        }
+        // Table: a header row followed by a |---|---| divider. Specs use these often.
+        if (line.includes("|") && i + 1 < lines.length && isTableDivider(lines[i + 1])) {
+          flushPara(); flushList();
+          const head = cells(line);
+          const rows = [];
+          i += 2;
+          while (i < lines.length && lines[i].includes("|") && lines[i].trim()) { rows.push(cells(lines[i])); i++; }
+          i--;
+          out.push(
+            "<table><thead><tr>" + head.map((c) => `<th>${inline(c)}</th>`).join("") + "</tr></thead><tbody>" +
+            rows.map((r) => "<tr>" + head.map((_, ci) => `<td>${inline(r[ci] ?? "")}</td>`).join("") + "</tr>").join("") +
+            "</tbody></table>");
+          continue;
+        }
+        if (/^\s*(---|\*\*\*|___)\s*$/.test(line)) { flushPara(); flushList(); out.push("<hr>"); continue; }
+        const quote = line.match(/^\s*>\s?(.*)$/);
+        if (quote) { flushPara(); flushList(); out.push(`<blockquote>${inline(quote[1])}</blockquote>`); continue; }
+        const ul = line.match(/^\s*[-*+]\s+(.*)$/);
+        if (ul) {
+          flushPara();
+          if (listType !== "ul") { flushList(); out.push("<ul>"); listType = "ul"; }
+          out.push(`<li>${inline(ul[1])}</li>`);
+          continue;
+        }
+        const ol = line.match(/^\s*\d+[.)]\s+(.*)$/);
+        if (ol) {
+          flushPara();
+          if (listType !== "ol") { flushList(); out.push("<ol>"); listType = "ol"; }
+          out.push(`<li>${inline(ol[1])}</li>`);
+          continue;
+        }
+        if (!line.trim()) { flushPara(); flushList(); continue; }
+        paraBuf.push(line.trim());
       }
+      if (inCode && codeBuf.length) out.push("<pre><code>" + escapeHtml(codeBuf.join("\n")) + "</code></pre>");
+      flushPara(); flushList();
+      return out.join("\n");
+    }
+
+    // ================= Router =================
+    // Hash routing keeps every screen linkable without touching the server,
+    // which only serves "/".
+    function parseRoute() {
+      const raw = location.hash.replace(/^#/, "") || "/";
+      const [pathPart, queryPart] = raw.split("?");
+      const segments = pathPart.split("/").filter(Boolean);
+      const query = new URLSearchParams(queryPart ?? "");
+      return { segments, query, raw };
+    }
+
+    function navigate(hash, { replace = false } = {}) {
+      const target = hash.startsWith("#") ? hash : "#" + hash;
+      if (location.hash === target) { render(); return; }
+      if (replace) location.replace(target);
+      else location.hash = target;
+    }
+
+    function statusesFromQuery(query) {
+      const raw = query.get("status");
+      return new Set(raw ? raw.split(",").filter(Boolean) : []);
+    }
+
+    function withStatuses(basePath, statuses) {
+      const list = Array.from(statuses);
+      return list.length ? `${basePath}?status=${list.join(",")}` : basePath;
+    }
+
+    // ================= Breadcrumb spine =================
+    function renderSpine(crumbs, right = "") {
+      const parts = crumbs.map((c, i) => {
+        const sep = i === 0 ? "" : '<span class="crumb-sep">/</span>';
+        const tone = c.status ? `style="--crumb-tone: ${STATUS_TONE[c.status] ?? "var(--border-strong)"}"` : "";
+        return c.href
+          ? `${sep}<a class="crumb" href="${escapeHtml(c.href)}">${escapeHtml(c.label)}</a>`
+          : `${sep}<span class="crumb current" ${tone}>${escapeHtml(c.label)}</span>`;
+      });
+      $("#spine").innerHTML = parts.join("") + (right ? `<span class="spine-right">${right}</span>` : "");
+    }
+
+    // ================= Shared item markup =================
+    function specItem(s) {
+      return `
+        <button class="item" data-goto="#/spec/${encodeURIComponent(s.id)}">
+          <div class="item-row1">
+            <span class="status-tag ${escapeHtml(s.status)}">${escapeHtml(statusLabel(s.status))}</span>
+            <code class="item-id">${escapeHtml(s.id)}</code>
+            <span class="item-subject">${escapeHtml(s.title)}</span>
+          </div>
+          <div class="item-meta">
+            <span>${s.task_count} tasks · ${s.task_summary.completed} done · ${s.task_summary.in_progress} running · ${s.task_summary.pending} ready</span>
+            ${s.latest_plan_version ? `<span class="badge">plan v${s.latest_plan_version}</span>` : ""}
+            ${s.pr ? `<span class="badge">PR #${escapeHtml(String(s.pr))}</span>` : ""}
+          </div>
+        </button>`;
+    }
+
+    function taskItem(tk, { hideSpec = false } = {}) {
+      const blocked = tk.blocked_by?.length ? `<span class="badge blocked">blocked by ${tk.blocked_by.length}</span>` : "";
+      return `
+        <button class="item" data-goto="#/task/${encodeURIComponent(tk.id)}">
+          <div class="item-row1">
+            <span class="status-tag ${escapeHtml(tk.status)}">${escapeHtml(statusLabel(tk.status))}</span>
+            <code class="item-id">${escapeHtml(tk.id)}</code>
+            ${tk.spec_id && !hideSpec ? `<span class="spec-badge">${escapeHtml(tk.spec_id)}</span>` : ""}
+            <span class="item-subject">${escapeHtml(tk.subject)}</span>
+          </div>
+          <div class="item-meta">
+            ${tk.owner ? `<span>${escapeHtml(tk.owner)}</span>` : ""}
+            ${tk.taken_at ? `<span>started ${relativeTime(tk.taken_at)}</span>` : ""}
+            ${tk.completed_at ? `<span>finished ${relativeTime(tk.completed_at)}</span>` : ""}
+            ${blocked}
+          </div>
+        </button>`;
+    }
+
+    function listBlock(items, renderer, { limit, moreHref, moreLabel, emptyTitle, emptyBody }) {
+      if (!items.length) {
+        return `<div class="empty"><strong>${escapeHtml(emptyTitle)}</strong>${escapeHtml(emptyBody ?? "")}</div>`;
+      }
+      const shown = limit ? items.slice(0, limit) : items;
+      const more = limit && items.length > limit
+        ? `<button class="list-more" data-goto="${escapeHtml(moreHref)}">${escapeHtml(moreLabel.replace("{n}", items.length))} →</button>`
+        : "";
+      return `<div class="list">${shown.map(renderer).join("")}</div>${more}`;
+    }
+
+    function filterBar(basePath, active, statuses) {
+      const btns = [`<button class="filter-btn ${active.size ? "" : "active"}" data-filter="" data-base="${escapeHtml(basePath)}">All</button>`]
+        .concat(statuses.map((s) =>
+          `<button class="filter-btn ${active.has(s) ? "active" : ""}" data-status="${s}" data-filter="${s}" data-base="${escapeHtml(basePath)}">${escapeHtml(statusLabel(s))}</button>`));
+      return `<div class="filter-bar">${btns.join("")}</div>`;
+    }
+
+    // ================= Event rendering =================
+    function eventRow(e) {
+      if (e._kind === "request") {
+        return `
+          <div class="item">
+            <div class="item-row1">
+              <span class="method-badge ${escapeHtml(String(e.method).toLowerCase())}">${escapeHtml(e.method)}</span>
+              <code>${escapeHtml(e.path)}</code>
+              <span class="source-badge ${escapeHtml(String(e.source).toLowerCase())}">${escapeHtml(e.source)}</span>
+              <span class="ts">${relativeTime(e.created_at ?? e.ts ?? e.timestamp)}</span>
+            </div>
+            <div class="item-meta"><span>${escapeHtml(e.actor)}</span></div>
+          </div>`;
+      }
+      let payload = null;
+      try { payload = e.payload ? JSON.parse(e.payload) : null; } catch { payload = e.payload || null; }
+      const entityHref = e.entity_type === "spec" ? `#/spec/${encodeURIComponent(e.entity_id)}`
+        : e.entity_type === "task" ? `#/task/${encodeURIComponent(e.entity_id)}` : null;
+      const entity = entityHref
+        ? `<a href="${entityHref}"><code>${escapeHtml(e.entity_id)}</code></a>`
+        : `<code>${escapeHtml(e.entity_type)}/${escapeHtml(e.entity_id)}</code>`;
+      return `
+        <div class="item event-${escapeHtml(e.event_type)}">
+          <div class="item-row1">
+            <span class="event-type ${escapeHtml(e.event_type)}">${escapeHtml(e.event_type)}</span>
+            ${entity}
+            <span class="ts">${relativeTime(e.created_at ?? e.ts)}</span>
+          </div>
+          <div class="item-meta">
+            ${e.actor ? `<span>${escapeHtml(e.actor)}</span>` : ""}
+            ${payload ? `<details><summary style="cursor:pointer;color:var(--fg-faint);font-size:11px;">payload</summary><pre class="event-payload">${escapeHtml(JSON.stringify(payload, null, 2))}</pre></details>` : ""}
+          </div>
+        </div>`;
+    }
+
+    function combinedEvents(dbEvents, filter) {
+      const all = [
+        ...(dbEvents ?? []).map((e) => ({ ...e, _kind: "event" })),
+        ...liveRequests.map((r) => ({ ...r, _kind: "request" })),
+      ].sort((a, b) =>
+        new Date(b.created_at ?? b.ts ?? b.timestamp).getTime() -
+        new Date(a.created_at ?? a.ts ?? a.timestamp).getTime());
+      return filter ? all.filter((e) => e._kind === filter) : all;
+    }
+
+    // ================= Global state =================
+    let liveRequests = [];
+    let lastDbEvents = [];
+    let appContext = {};
+    let statsCache = null;
+
+    // ================= Pages =================
+    async function pageOverview(route) {
+      const [stats, specs, tasks, dbEvents] = await Promise.all([
+        api("GET", "/api/status"),
+        api("GET", "/api/specs"),
+        api("GET", "/api/tasks"),
+        api("GET", "/api/events?limit=30"),
+      ]);
+      lastDbEvents = dbEvents;
+      renderStats(stats);
+
+      const eventFilter = route.query.get("events") ?? "";
+      const events = combinedEvents(dbEvents, eventFilter).slice(0, 15);
+      const inProgress = tasks.filter((tk) => tk.status === "in_progress");
+
+      renderSpine([{ label: "feinai" }], `<a class="btn ghost sm" href="#/specs">All specs</a><a class="btn ghost sm" href="#/tasks">All tasks</a>`);
+
+      $("#app").innerHTML = `
+        <section style="margin-bottom:24px;">
+          <div class="section-body">
+            <div class="monitor-header">
+              <span class="monitor-dot ${inProgress.length ? "monitor-dot--active" : "monitor-dot--idle"}"></span>
+              <span class="monitor-title">Agents at work</span>
+              <span class="monitor-count">${inProgress.length}</span>
+            </div>
+            <div class="worktree-cards-grid" id="worktree-cards-grid">
+              ${inProgress.length ? "" : `<div class="worktree-empty">${escapeHtml(t("monitor_empty"))}</div>`}
+            </div>
+          </div>
+        </section>
+
+        <div class="grid-2">
+          <section>
+            <h2>Specs <span class="count">${specs.length}</span>
+              <a class="btn sm" href="#/new/spec" style="margin-left:auto;">New spec</a>
+            </h2>
+            ${listBlock(specs, specItem, {
+              limit: OVERVIEW_LIMIT,
+              moreHref: "#/specs",
+              moreLabel: "View all {n} specs",
+              emptyTitle: "No specs yet",
+              emptyBody: "Create one to start planning work.",
+            })}
+          </section>
+
+          <section>
+            <h2>Tasks <span class="count">${tasks.length}</span>
+              <a class="btn sm" href="#/new/task" style="margin-left:auto;">New task</a>
+            </h2>
+            ${listBlock(tasks, taskItem, {
+              limit: OVERVIEW_LIMIT,
+              moreHref: "#/tasks",
+              moreLabel: "View all {n} tasks",
+              emptyTitle: "No tasks yet",
+              emptyBody: "Add a task to give an agent something to claim.",
+            })}
+          </section>
+
+          <section class="span-all">
+            <h2>Recent activity <span class="count">${events.length}</span></h2>
+            <div class="filter-bar">
+              <button class="filter-btn ${eventFilter ? "" : "active"}" data-events="">All</button>
+              <button class="filter-btn ${eventFilter === "event" ? "active" : ""}" data-events="event">Changes</button>
+              <button class="filter-btn ${eventFilter === "request" ? "active" : ""}" data-events="request">Requests</button>
+            </div>
+            <div class="list events-list">
+              ${events.length ? events.map(eventRow).join("") : '<div class="empty"><strong>Nothing has happened yet</strong>Activity shows up here as agents work.</div>'}
+            </div>
+          </section>
+        </div>
+      `;
+
+      $$("[data-events]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const v = btn.dataset.events;
+          navigate(v ? "#/?events=" + v : "#/", { replace: true });
+        });
+      });
+
+      mountWorktreeCards(inProgress);
+    }
+
+    async function pageSpecList(route) {
+      const specs = await api("GET", "/api/specs");
+      const active = statusesFromQuery(route.query);
+      const filtered = active.size ? specs.filter((s) => active.has(s.status)) : specs;
+
+      renderSpine(
+        [{ label: "feinai", href: "#/" }, { label: "Specs" }],
+        `<a class="btn ghost sm" href="#/new/spec">New spec</a>`
+      );
+
+      $("#app").innerHTML = `
+        <div class="page-head">
+          <div>
+            <h1 class="page-title">Specs</h1>
+            <p class="page-subtitle">${filtered.length} of ${specs.length} shown</p>
+          </div>
+        </div>
+        <section>
+          ${filterBar("#/specs", active, ["pending", "in_progress", "completed", "archived"])}
+          ${listBlock(filtered, specItem, {
+            emptyTitle: active.size ? "No specs match these filters" : "No specs yet",
+            emptyBody: active.size ? "Clear a filter to see the rest." : "Create one to start planning work.",
+          })}
+        </section>
+      `;
+      wireFilters(active);
+    }
+
+    async function pageTaskList(route) {
+      const tasks = await api("GET", "/api/tasks");
+      const active = statusesFromQuery(route.query);
+      const specFilter = route.query.get("spec");
+      let filtered = active.size ? tasks.filter((tk) => active.has(tk.status)) : tasks;
+      if (specFilter) filtered = filtered.filter((tk) => tk.spec_id === specFilter);
+
+      renderSpine(
+        [{ label: "feinai", href: "#/" }, { label: "Tasks" }],
+        `<a class="btn ghost sm" href="#/new/task">New task</a>`
+      );
+
+      $("#app").innerHTML = `
+        <div class="page-head">
+          <div>
+            <h1 class="page-title">Tasks</h1>
+            <p class="page-subtitle">${filtered.length} of ${tasks.length} shown${specFilter ? ` · limited to <code>${escapeHtml(specFilter)}</code>` : ""}</p>
+          </div>
+        </div>
+        <section>
+          ${filterBar("#/tasks", active, ["pending", "in_progress", "completed", "failed"])}
+          ${listBlock(filtered, taskItem, {
+            emptyTitle: active.size || specFilter ? "No tasks match these filters" : "No tasks yet",
+            emptyBody: active.size || specFilter ? "Clear a filter to see the rest." : "Add a task to give an agent something to claim.",
+          })}
+        </section>
+      `;
+      wireFilters(active, specFilter ? { spec: specFilter } : {});
+    }
+
+    function wireFilters(active, extra = {}) {
+      $$("[data-filter]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const value = btn.dataset.filter;
+          const next = new Set(active);
+          if (!value) next.clear();
+          else if (next.has(value)) next.delete(value);
+          else next.add(value);
+          const params = new URLSearchParams(extra);
+          if (next.size) params.set("status", Array.from(next).join(","));
+          const qs = params.toString();
+          navigate(btn.dataset.base + (qs ? "?" + qs : ""), { replace: true });
+        });
+      });
+    }
+
+    async function pageSpec(route) {
+      const id = decodeURIComponent(route.segments[1] ?? "");
+      const data = await api("GET", `/api/specs/${encodeURIComponent(id)}`);
+      const { spec, tasks, latest_plan } = data;
+
+      renderSpine([
+        { label: "feinai", href: "#/" },
+        { label: "Specs", href: "#/specs" },
+        { label: spec.id, status: spec.status },
+      ]);
+
+      const actions = [];
+      if (spec.status === "pending") actions.push(`<button class="btn primary" data-action="start-spec" data-id="${escapeHtml(spec.id)}">${t("start-spec")}</button>`);
+      if (spec.status === "in_progress") actions.push(`<button class="btn success" data-action="done-spec" data-id="${escapeHtml(spec.id)}">${t("done-spec")}</button>`);
+      actions.push(`<a class="btn" href="#/new/task?spec=${encodeURIComponent(spec.id)}">Add task</a>`);
+      if (spec.status === "archived") actions.push(`<button class="btn gray" data-action="unarchive-spec" data-id="${escapeHtml(spec.id)}">Restore</button>`);
+      else actions.push(`<button class="btn ghost" data-action="archive-spec" data-id="${escapeHtml(spec.id)}">Archive</button>`);
+      actions.push(`<span class="spacer"></span>`);
+      actions.push(`<button class="btn danger" data-action="delete-spec" data-id="${escapeHtml(spec.id)}">Delete spec</button>`);
+
+      const summary = tasks.reduce((acc, tk) => { acc[tk.status] = (acc[tk.status] ?? 0) + 1; return acc; }, {});
+      const metaRows = [
+        ["Status", statusLabel(spec.status)],
+        ["Created", spec.created_at ?? "—"],
+        spec.updated_at ? ["Updated", spec.updated_at] : null,
+        spec.pr ? ["Pull request", `#${spec.pr}`] : null,
+        latest_plan ? ["Plan", `v${latest_plan.version}`] : null,
+        ["Tasks", `${tasks.length} total · ${summary.completed ?? 0} done · ${summary.in_progress ?? 0} running · ${summary.pending ?? 0} ready${summary.failed ? ` · ${summary.failed} failed` : ""}`],
+      ].filter(Boolean);
+
+      $("#app").innerHTML = `
+        <div class="page-head">
+          <div>
+            <h1 class="page-title"><code>${escapeHtml(spec.id)}</code> ${escapeHtml(spec.title)}</h1>
+            <p class="page-subtitle"><span class="status-tag ${escapeHtml(spec.status)}">${escapeHtml(statusLabel(spec.status))}</span></p>
+          </div>
+        </div>
+
+        <div class="action-bar">${actions.join("")}</div>
+
+        <div class="grid-2">
+          <section class="span-all">
+            <h2>Details</h2>
+            <div class="section-body">
+              <div class="meta-grid">
+                ${metaRows.map(([k, v, isHtml]) => `<span class="meta-label">${escapeHtml(k)}</span><span class="meta-value">${isHtml ? v : escapeHtml(String(v))}</span>`).join("")}
+              </div>
+            </div>
+          </section>
+
+          <section class="span-all">
+            <h2>Tasks <span class="count">${tasks.length}</span>
+              <a class="btn sm" href="#/new/task?spec=${encodeURIComponent(spec.id)}" style="margin-left:auto;">Add task</a>
+            </h2>
+            ${listBlock(tasks, (tk) => taskItem(tk, { hideSpec: true }), {
+              emptyTitle: "This spec has no tasks",
+              emptyBody: "Break the plan into tasks so agents can claim them.",
+            })}
+          </section>
+
+          ${spec.content ? `
+          <section class="span-all">
+            <h2>Spec</h2>
+            <div class="section-body"><div class="markdown">${renderMarkdown(spec.content)}</div></div>
+          </section>` : ""}
+
+          ${latest_plan?.content ? `
+          <section class="span-all">
+            <h2>Plan <span class="count">v${latest_plan.version}</span></h2>
+            <div class="section-body"><div class="markdown">${renderMarkdown(latest_plan.content)}</div></div>
+          </section>` : ""}
+        </div>
+      `;
+      wireActions();
+    }
+
+    async function pageTask(route) {
+      const id = decodeURIComponent(route.segments[1] ?? "");
+      const task = await api("GET", `/api/tasks/${encodeURIComponent(id)}`);
+
+      const crumbs = [{ label: "feinai", href: "#/" }];
+      if (task.spec_id) {
+        crumbs.push({ label: "Specs", href: "#/specs" });
+        crumbs.push({ label: task.spec_id, href: `#/spec/${encodeURIComponent(task.spec_id)}` });
+      } else {
+        crumbs.push({ label: "Tasks", href: "#/tasks" });
+      }
+      crumbs.push({ label: task.id, status: task.status });
+      renderSpine(crumbs);
+
+      const actions = [];
+      if (task.status === "pending") actions.push(`<button class="btn yellow" data-action="take" data-id="${escapeHtml(task.id)}">${t("take")}</button>`);
+      if (task.status === "in_progress") {
+        actions.push(`<button class="btn success" data-action="done" data-id="${escapeHtml(task.id)}">${t("done")}</button>`);
+        actions.push(`<button class="btn danger" data-action="fail" data-id="${escapeHtml(task.id)}">${t("fail")}</button>`);
+        actions.push(`<button class="btn ghost" data-action="release" data-id="${escapeHtml(task.id)}">Release</button>`);
+      }
+      if (task.status === "completed" || task.status === "failed") {
+        actions.push(`<button class="btn" data-action="reopen" data-id="${escapeHtml(task.id)}">Reopen</button>`);
+      }
+
+      const taskLinks = (ids) => ids
+        .map((b) => `<a href="#/task/${encodeURIComponent(b)}"><code>${escapeHtml(b)}</code></a>`)
+        .join(", ");
+      const metaRows = [
+        ["Status", statusLabel(task.status)],
+        task.owner ? ["Owner", task.owner] : null,
+        task.taken_at ? ["Started", task.taken_at] : null,
+        task.completed_at ? ["Finished", task.completed_at] : null,
+        task.worktree ? ["Worktree", `<code>${escapeHtml(task.worktree)}</code>`, true] : null,
+        task.blocked_by?.length ? ["Blocked by", taskLinks(task.blocked_by), true] : null,
+        task.packages?.length ? ["Packages", task.packages.map((x) => `<code>${escapeHtml(x)}</code>`).join(" "), true] : null,
+        task.quality_gates?.length ? ["Quality gates", task.quality_gates.map((g) => `<code>${escapeHtml(g)}</code>`).join("<br>"), true] : null,
+      ].filter(Boolean);
+
+      $("#app").innerHTML = `
+        <div class="page-head">
+          <div>
+            <h1 class="page-title"><code>${escapeHtml(task.id)}</code> ${escapeHtml(task.subject)}</h1>
+            <p class="page-subtitle">
+              <span class="status-tag ${escapeHtml(task.status)}">${escapeHtml(statusLabel(task.status))}</span>
+              ${task.spec_id ? `<a class="spec-badge" href="#/spec/${encodeURIComponent(task.spec_id)}">${escapeHtml(task.spec_id)}</a>` : ""}
+            </p>
+          </div>
+        </div>
+
+        ${actions.length ? `<div class="action-bar">${actions.join("")}</div>` : ""}
+
+        <div class="grid-2">
+          ${task.status === "in_progress" ? `
+          <section class="span-all">
+            <h2>Live worktree</h2>
+            <div class="section-body">
+              <div class="worktree-cards-grid" id="worktree-cards-grid"></div>
+            </div>
+          </section>` : ""}
+
+          <section class="span-all">
+            <h2>Details</h2>
+            <div class="section-body">
+              <div class="meta-grid">
+                ${metaRows.map(([k, v, isHtml]) => `<span class="meta-label">${escapeHtml(k)}</span><span class="meta-value">${isHtml ? v : escapeHtml(String(v))}</span>`).join("")}
+              </div>
+            </div>
+          </section>
+
+          ${task.description ? `
+          <section class="span-all">
+            <h2>Workplan</h2>
+            <div class="section-body"><div class="markdown">${renderMarkdown(task.description)}</div></div>
+          </section>` : ""}
+
+          ${task.result ? `
+          <section class="span-all">
+            <h2>Result</h2>
+            <div class="section-body"><div class="markdown">${renderMarkdown(task.result)}</div></div>
+          </section>` : ""}
+
+          ${task.error ? `
+          <section class="span-all">
+            <h2>Error</h2>
+            <div class="section-body"><div class="markdown" style="color: var(--red);">${escapeHtml(task.error)}</div></div>
+          </section>` : ""}
+        </div>
+      `;
+      wireActions();
+      if (task.status === "in_progress") mountWorktreeCards([task], { solo: true });
+    }
+
+    async function pageNewSpec() {
+      renderSpine([{ label: "feinai", href: "#/" }, { label: "Specs", href: "#/specs" }, { label: "New spec" }]);
+      let nextId = "SPEC-001";
+      try {
+        const specs = await api("GET", "/api/specs");
+        const nums = specs.map((s) => parseInt(s.id.replace(/\D/g, ""), 10)).filter(Boolean);
+        nextId = `SPEC-${String((nums.length ? Math.max(...nums) : 0) + 1).padStart(3, "0")}`;
+      } catch {}
+
+      $("#app").innerHTML = `
+        <div class="page-head">
+          <div>
+            <h1 class="page-title">New spec</h1>
+            <p class="page-subtitle">Describe what needs to be built. Tasks come next.</p>
+          </div>
+        </div>
+        <section>
+          <div class="section-body">
+            <div class="form-grid cols-2">
+              <div class="form-row">
+                <label for="ns-id">ID</label>
+                <input type="text" id="ns-id" autocomplete="off" value="${escapeHtml(nextId)}">
+                <p class="form-hint">Suggested from the highest existing number.</p>
+              </div>
+              <div class="form-row">
+                <label for="ns-title">Title</label>
+                <input type="text" id="ns-title" autocomplete="off" placeholder="Short, plain description">
+              </div>
+            </div>
+            <div class="form-row">
+              <label for="ns-content">Spec content (markdown, optional)</label>
+              <textarea id="ns-content" class="tall" placeholder="# Goal&#10;&#10;What should be true when this is done."></textarea>
+            </div>
+            <div class="action-bar" style="margin: 0;">
+              <button class="btn primary" data-action="create-spec">Create spec</button>
+              <a class="btn ghost" href="#/specs">Cancel</a>
+            </div>
+          </div>
+        </section>
+      `;
+      wireActions();
+      $("#ns-title")?.focus();
+    }
+
+    async function pageNewTask(route) {
+      const preSpecId = route.query.get("spec") ?? "";
+      renderSpine([
+        { label: "feinai", href: "#/" },
+        ...(preSpecId
+          ? [{ label: "Specs", href: "#/specs" }, { label: preSpecId, href: `#/spec/${encodeURIComponent(preSpecId)}` }]
+          : [{ label: "Tasks", href: "#/tasks" }]),
+        { label: "New task" },
+      ]);
+
+      let nextId = "TASK-001-A";
+      let specOptions = '<option value="">No spec</option>';
+      try {
+        const [tasks, specs] = await Promise.all([api("GET", "/api/tasks"), api("GET", "/api/specs")]);
+        const nums = tasks.map((tk) => {
+          const m = tk.id.match(/^TASK-(\d+)/);
+          return m ? parseInt(m[1], 10) : 0;
+        }).filter(Boolean);
+        nextId = `TASK-${String((nums.length ? Math.max(...nums) : 0) + 1).padStart(3, "0")}-A`;
+        specOptions = '<option value="">No spec</option>' + specs.map((s) =>
+          `<option value="${escapeHtml(s.id)}" ${s.id === preSpecId ? "selected" : ""}>${escapeHtml(s.id)} — ${escapeHtml(s.title)}</option>`).join("");
+      } catch {}
+
+      $("#app").innerHTML = `
+        <div class="page-head">
+          <div>
+            <h1 class="page-title">New task</h1>
+            <p class="page-subtitle">One unit of work an agent can claim and finish on its own.</p>
+          </div>
+        </div>
+        <section>
+          <div class="section-body">
+            <div class="form-grid cols-2">
+              <div class="form-row">
+                <label for="nt-spec">Belongs to</label>
+                <select id="nt-spec">${specOptions}</select>
+              </div>
+              <div class="form-row">
+                <label for="nt-id">ID</label>
+                <input type="text" id="nt-id" autocomplete="off" value="${escapeHtml(nextId)}">
+              </div>
+            </div>
+            <div class="form-row">
+              <label for="nt-subject">Subject</label>
+              <input type="text" id="nt-subject" autocomplete="off" placeholder="What the agent should accomplish">
+            </div>
+            <div class="form-row">
+              <label for="nt-desc">Workplan (markdown)</label>
+              <textarea id="nt-desc" class="tall" placeholder="Steps, files to touch, how to verify."></textarea>
+            </div>
+            <div class="form-grid cols-2">
+              <div class="form-row">
+                <label for="nt-packages">Packages</label>
+                <input type="text" id="nt-packages" autocomplete="off" placeholder="@app/auth, @app/users">
+                <p class="form-hint">Comma separated. Used to detect file-level conflicts between parallel agents.</p>
+              </div>
+              <div class="form-row">
+                <label for="nt-gates">Quality gates</label>
+                <textarea id="nt-gates" style="min-height:96px" placeholder="pnpm typecheck&#10;pnpm test -- --run"></textarea>
+                <p class="form-hint">One command per line. All must pass before the task can be marked done.</p>
+              </div>
+            </div>
+            <div class="action-bar" style="margin: 0;">
+              <button class="btn primary" data-action="create-task">Create task</button>
+              <a class="btn ghost" href="${preSpecId ? `#/spec/${encodeURIComponent(preSpecId)}` : "#/tasks"}">Cancel</a>
+            </div>
+          </div>
+        </section>
+      `;
+      wireActions();
+      $("#nt-subject")?.focus();
+    }
+
+    function pageNotFound(route) {
+      renderSpine([{ label: "feinai", href: "#/" }, { label: "Not found" }]);
+      $("#app").innerHTML = `
+        <div class="empty" style="padding:64px 16px;">
+          <strong>That page doesn't exist</strong>
+          <code>#${escapeHtml(route.raw)}</code> doesn't match anything here.
+          <div style="margin-top:16px;"><a class="btn" href="#/">Back to overview</a></div>
+        </div>`;
+    }
+
+    // ================= Actions =================
+    function wireActions(root = document) {
+      $$("[data-action]", root).forEach((btn) => {
+        btn.addEventListener("click", () => runAction(btn.dataset.action, btn.dataset.id));
+      });
+    }
+
+    async function runAction(action, id) {
+      try {
+        if (action === "take") {
+          if (!(await confirmDialog(t("confirm_take"), "take")).ok) return;
+          await api("POST", `/api/tasks/${encodeURIComponent(id)}/take`, {});
+          toast("Task taken", id);
+          render();
+        } else if (action === "done") {
+          const r = await confirmDialog(t("result_prompt"), null, { value: t("result_default"), placeholder: t("result_default") });
+          if (!r.ok) return;
+          await api("POST", `/api/tasks/${encodeURIComponent(id)}/done`, { result: r.value });
+          toast("Task done", id);
+          render();
+        } else if (action === "fail") {
+          const r = await confirmDialog(t("error_prompt"), null, { placeholder: "What went wrong" });
+          if (!r.ok) return;
+          await api("POST", `/api/tasks/${encodeURIComponent(id)}/fail`, { error: r.value });
+          toast("Task failed", id);
+          render();
+        } else if (action === "release") {
+          if (!(await confirmDialog("Release this task back to Ready?", "release")).ok) return;
+          await api("POST", `/api/tasks/${encodeURIComponent(id)}/release`, {});
+          toast("Task released", id);
+          render();
+        } else if (action === "reopen") {
+          if (!(await confirmDialog("Reopen this task to Ready?", "reopen")).ok) return;
+          await api("POST", `/api/tasks/${encodeURIComponent(id)}/reopen`, {});
+          toast("Task reopened", id);
+          render();
+        } else if (action === "start-spec") {
+          if (!(await confirmDialog(t("confirm_start_spec"), "start-spec")).ok) return;
+          await api("POST", `/api/specs/${encodeURIComponent(id)}/start`, {});
+          toast("Spec started", id);
+          render();
+        } else if (action === "done-spec") {
+          const r = await confirmDialog(t("pr_prompt"), null, { placeholder: "1234" });
+          if (!r.ok) return;
+          await api("POST", `/api/specs/${encodeURIComponent(id)}/done`, r.value ? { pr: r.value } : {});
+          toast("Spec done", id);
+          render();
+        } else if (action === "archive-spec") {
+          if (!(await confirmDialog("Archive this spec? Its tasks leave the active task list.", "archive-spec")).ok) return;
+          await api("POST", `/api/specs/${encodeURIComponent(id)}/archive`, {});
+          toast("Spec archived", id);
+          render();
+        } else if (action === "unarchive-spec") {
+          if (!(await confirmDialog("Restore this spec to active work?", "unarchive-spec")).ok) return;
+          await api("POST", `/api/specs/${encodeURIComponent(id)}/unarchive`, {});
+          toast("Spec restored", id);
+          render();
+        } else if (action === "delete-spec") {
+          if (!(await confirmDialog(`Delete ${id} and all of its tasks? This cannot be undone.`)).ok) return;
+          await api("DELETE", `/api/specs/${encodeURIComponent(id)}`);
+          toast("Spec deleted", id);
+          navigate("#/specs");
+        } else if (action === "create-spec") {
+          const body = {
+            id: $("#ns-id").value.trim(),
+            title: $("#ns-title").value.trim(),
+            content: $("#ns-content").value || undefined,
+          };
+          if (!body.id || !body.title) return toast("Missing fields", "ID and title are required", true);
+          await api("POST", "/api/specs", body);
+          toast("Spec created", body.id);
+          navigate(`#/spec/${encodeURIComponent(body.id)}`);
+        } else if (action === "create-task") {
+          const packages = $("#nt-packages").value.split(",").map((s) => s.trim()).filter(Boolean);
+          const gates = $("#nt-gates").value.split("\n").map((s) => s.trim()).filter(Boolean);
+          const body = {
+            id: $("#nt-id").value.trim(),
+            subject: $("#nt-subject").value.trim(),
+            description: $("#nt-desc").value || undefined,
+            spec_id: $("#nt-spec").value.trim() || undefined,
+            packages: packages.length ? packages : undefined,
+            quality_gates: gates.length ? gates : undefined,
+          };
+          if (!body.id || !body.subject) return toast("Missing fields", "ID and subject are required", true);
+          await api("POST", "/api/tasks", body);
+          toast("Task created", body.id);
+          navigate(`#/task/${encodeURIComponent(body.id)}`);
+        }
+      } catch (err) {
+        toast("Action failed", err.message, true);
+      }
+    }
+
+    // ================= Live worktree cards =================
+    let worktreePollTimer = null;
+    let worktreeElapsedTimer = null;
+    let agentProcesses = [];
+
+    function stopLiveTimers() {
+      if (worktreePollTimer) { clearInterval(worktreePollTimer); worktreePollTimer = null; }
+      if (worktreeElapsedTimer) { clearInterval(worktreeElapsedTimer); worktreeElapsedTimer = null; }
+    }
+
+    function parseOwner(owner) {
+      if (!owner) return null;
+      const [type, pid, user] = owner.split(":");
+      return { type, pid, user };
+    }
+
+    function worktreeStateBadge(data) {
+      if (data.error) return { cls: "error", text: "error" };
+      if (data.merged) return { cls: "merged", text: "merged" };
+      if (!data.exists) {
+        const neverMade = data.branch === null && data.lastCommit === null;
+        return { cls: neverMade ? "not-created" : "removed", text: neverMade ? "not created" : "removed" };
+      }
+      if (data.gitClean) return { cls: "clean", text: "no changes" };
+      return { cls: "active", text: "active" };
+    }
+
+    function mountWorktreeCards(inProgress, { solo = false } = {}) {
+      stopLiveTimers();
+      const grid = $("#worktree-cards-grid");
+      if (!grid || !inProgress.length) return;
+
+      grid.innerHTML = inProgress.map((task) => {
+        const owner = parseOwner(task.owner);
+        const ownerHtml = owner
+          ? `<span class="owner" data-owner-type="${escapeHtml(owner.type)}" data-owner-pid="${escapeHtml(owner.pid)}">${escapeHtml(owner.type)} · pid ${escapeHtml(owner.pid)}</span>`
+          : "";
+        const tag = solo ? "div" : "button";
+        return `
+          <${tag} class="worktree-card ${solo ? "solo" : ""}" data-worktree-task="${escapeHtml(task.id)}" ${solo ? "" : `data-goto="#/task/${encodeURIComponent(task.id)}"`}>
+            <div class="worktree-card-header">
+              <code>${escapeHtml(task.id)}</code>
+              ${task.spec_id ? `<span class="spec-badge">${escapeHtml(task.spec_id)}</span>` : ""}
+              ${ownerHtml}
+              <span class="worktree-state" data-state-badge="${escapeHtml(task.id)}">checking</span>
+              <div class="worktree-context">
+                <div class="context-row"><span class="context-label">Working directory</span><span class="context-value">${escapeHtml(task.worktree || appContext.repoRoot || "—")}</span></div>
+                <div class="context-row"><span class="context-label">Repo</span><span class="context-value">${escapeHtml(appContext.repoName || "—")}</span></div>
+                <div class="context-row"><span class="context-label">.feinai</span><span class="context-value">${escapeHtml(appContext.feinaiPath || "—")}</span></div>
+              </div>
+              <span class="elapsed-time" data-elapsed="${escapeHtml(task.taken_at ?? "")}"></span>
+            </div>
+            <div class="worktree-process" data-process="${escapeHtml(task.id)}"></div>
+            <ul class="worktree-file-list" data-files="${escapeHtml(task.id)}"></ul>
+            <div class="worktree-commit" data-commit="${escapeHtml(task.id)}"></div>
+          </${tag}>`;
+      }).join("");
+
+      const ids = inProgress.map((tk) => tk.id);
+      pollWorktreeStatus(ids);
+      worktreePollTimer = setInterval(() => pollWorktreeStatus(ids), 5000);
+      tickElapsed();
+      worktreeElapsedTimer = setInterval(tickElapsed, 1000);
+    }
+
+    function tickElapsed() {
+      $$("[data-elapsed]").forEach((el) => {
+        const iso = el.getAttribute("data-elapsed");
+        if (!iso) { el.textContent = ""; return; }
+        el.textContent = elapsedSince(iso);
+        const minutes = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+        el.style.color = minutes >= 60 ? "var(--red)" : minutes >= 30 ? "var(--yellow)" : "var(--fg-dim)";
+      });
     }
 
     async function pollWorktreeStatus(ids) {
       if (!ids.length) return;
-      const [worktreeResults, agents] = await Promise.all([
-        Promise.allSettled(
-          ids.map(async (id) => {
-            const data = await api("GET", `/api/tasks/${encodeURIComponent(id)}/worktree-status`);
-            return { id, data };
-          })
-        ),
+      const [results, agents] = await Promise.all([
+        Promise.allSettled(ids.map(async (id) => ({
+          id,
+          data: await api("GET", `/api/tasks/${encodeURIComponent(id)}/worktree-status`),
+        }))),
         api("GET", "/api/agents").catch(() => []),
       ]);
       agentProcesses = Array.isArray(agents) ? agents : [];
-      for (const r of worktreeResults) {
-        if (r.status === "fulfilled") {
-          updateWorktreeCard(r.value.id, r.value.data);
-        }
-      }
+      for (const r of results) if (r.status === "fulfilled") updateWorktreeCard(r.value.id, r.value.data);
     }
 
     function gitFileColor(line) {
-      if (/^(\?\?|!!)\s/.test(line)) return 'var(--fg-faint)';
-      if (/^A[\s]/.test(line) || /^[A-Z]A/.test(line)) return 'var(--green)';
-      if (/^D[\s]/.test(line) || /^[A-Z]D/.test(line)) return 'var(--red)';
-      if (/M/.test(line.slice(0,2))) return 'var(--yellow)';
-      return 'var(--fg-dim)';
+      if (/^(\?\?|!!)\s/.test(line)) return "var(--fg-faint)";
+      if (/^A[\s]/.test(line) || /^[A-Z]A/.test(line)) return "var(--green)";
+      if (/^D[\s]/.test(line) || /^[A-Z]D/.test(line)) return "var(--red)";
+      if (/M/.test(line.slice(0, 2))) return "var(--yellow)";
+      return "var(--fg-dim)";
     }
 
     function updateWorktreeCard(id, data) {
       const badgeEl = $(`[data-state-badge="${CSS.escape(id)}"]`);
+      if (!badgeEl) return;
       const filesEl = $(`[data-files="${CSS.escape(id)}"]`);
       const commitEl = $(`[data-commit="${CSS.escape(id)}"]`);
       const processEl = $(`[data-process="${CSS.escape(id)}"]`);
-      if (!badgeEl) return;
+
       const state = worktreeStateBadge(data);
       badgeEl.className = `worktree-state ${state.cls}`;
       badgeEl.textContent = state.text;
-      const card = badgeEl.closest('.worktree-card');
+      const card = badgeEl.closest(".worktree-card");
       if (card) card.dataset.cardState = state.cls;
+
       const agent = agentProcesses.find((a) => a.taskId === id);
       if (processEl) {
-        const ownerEl = badgeEl.closest('.worktree-card')?.querySelector('.owner');
+        const ownerEl = card?.querySelector(".owner");
         const ownerType = ownerEl?.dataset.ownerType ?? null;
         const ownerPid = ownerEl?.dataset.ownerPid ?? null;
         const ownerTag = ownerType && ownerPid
-          ? `<span class="agent-type">${escapeHtml(ownerType)}</span><span class="agent-pid">pid ${escapeHtml(ownerPid)}</span>`
-          : '';
+          ? `<span>${escapeHtml(ownerType)}</span><span>pid ${escapeHtml(ownerPid)}</span>`
+          : "";
         processEl.innerHTML = agent
-          ? `${ownerTag}<span class="agent-cpu">${agent.cpu}% cpu</span><span class="agent-mem">${agent.mem}% mem</span>`
-          : ownerTag || "";
+          ? `${ownerTag}<span>${agent.cpu}% cpu</span><span>${agent.mem}% mem</span>`
+          : ownerTag;
       }
       if (filesEl) {
         filesEl.innerHTML = data.files?.length
@@ -1630,34 +1639,71 @@
           : "";
       }
       if (commitEl) {
-        commitEl.textContent = data.lastCommit ? `last: ${escapeHtml(data.lastCommit)}` : "";
-        if (data.branch && data.branch !== "HEAD") {
-          commitEl.textContent += ` · ${escapeHtml(data.branch)}`;
-        }
+        let text = data.lastCommit ? `last: ${data.lastCommit}` : "";
+        if (data.branch && data.branch !== "HEAD") text += `${text ? " · " : ""}${data.branch}`;
+        commitEl.textContent = text;
       }
     }
 
-    // -------- Refresh --------
-    async function refresh() {
+    // ================= Stats =================
+    function renderStats(stats) {
+      statsCache = stats;
+      const rows = ["pending", "in_progress", "completed", "failed"]
+        .filter((k) => k !== "failed" || stats.failed)
+        .map((k) => `
+          <button class="stat ${k}" data-goto="#/tasks?status=${k}" title="Show ${escapeHtml(statusLabel(k))} tasks">
+            <span class="dot"></span>
+            <span class="count">${stats[k] ?? 0}</span>
+            <span class="label">${escapeHtml(statusLabel(k))}</span>
+          </button>`);
+      $("#stats").innerHTML = rows.join("");
+    }
+
+    // ================= Render =================
+    const ROUTES = [
+      { match: (s) => s.length === 0, page: pageOverview },
+      { match: (s) => s[0] === "specs" && s.length === 1, page: pageSpecList },
+      { match: (s) => s[0] === "tasks" && s.length === 1, page: pageTaskList },
+      { match: (s) => s[0] === "spec" && s.length === 2, page: pageSpec },
+      { match: (s) => s[0] === "task" && s.length === 2, page: pageTask },
+      { match: (s) => s[0] === "new" && s[1] === "spec", page: pageNewSpec },
+      { match: (s) => s[0] === "new" && s[1] === "task", page: pageNewTask },
+    ];
+
+    let renderToken = 0;
+    async function render() {
+      const token = ++renderToken;
+      stopLiveTimers();
+      const route = parseRoute();
+      const hit = ROUTES.find((r) => r.match(route.segments));
+      if (!hit) { pageNotFound(route); return; }
       try {
-        const [stats, specs, tasks, dbEvents] = await Promise.all([
-          api("GET", "/api/status"),
-          api("GET", "/api/specs"),
-          api("GET", "/api/tasks"),
-          api("GET", "/api/events?limit=30"),
-        ]);
-        renderStats(stats);
-        renderSpecs(specs);
-        renderTasks(tasks);
-        renderWorktreeCards(tasks);
-        lastDbEvents = dbEvents;
-        renderCombinedEvents(dbEvents);
+        await hit.page(route);
+        if (token !== renderToken) return; // a newer navigation won
       } catch (err) {
-        console.error("refresh failed:", err);
+        if (token !== renderToken) return;
+        renderSpine([{ label: "feinai", href: "#/" }, { label: "Error" }]);
+        $("#app").innerHTML = `
+          <div class="empty" style="padding:64px 16px;">
+            <strong>Couldn't load this page</strong>
+            ${escapeHtml(err.message)}
+            <div style="margin-top:16px;"><a class="btn" href="#/">Back to overview</a></div>
+          </div>`;
+        return;
+      }
+      // Keep the header stats fresh on pages that don't fetch them.
+      if (route.segments.length) {
+        api("GET", "/api/status").then(renderStats).catch(() => {});
       }
     }
 
-    // -------- Search --------
+    // Any element carrying data-goto navigates. One handler for the whole app.
+    document.addEventListener("click", (e) => {
+      const target = e.target.closest("[data-goto]");
+      if (target) { e.preventDefault(); navigate(target.dataset.goto); }
+    });
+
+    // ================= Search =================
     let searchTimer = null;
     function setupSearch() {
       const input = $("#search");
@@ -1665,48 +1711,36 @@
       input.addEventListener("input", () => {
         clearTimeout(searchTimer);
         const q = input.value.trim();
-        if (!q) {
-          results.classList.remove("visible");
-          return;
-        }
+        if (!q) { results.classList.remove("visible"); return; }
         searchTimer = setTimeout(async () => {
           try {
             const hits = await api("GET", `/api/search?q=${encodeURIComponent(q)}`);
-            if (!hits.length) {
-              results.innerHTML = '<div class="empty">no matches</div>';
-            } else {
-              results.innerHTML = hits.map((h) => `
-                <div class="item" data-type="${h.type}" data-id="${escapeHtml(h.id)}">
-                  <div class="item-row1">
-                    <span class="status-tag ${escapeHtml(h.status)}">${escapeHtml(statusLabel(h.status))}</span>
-                    <code class="item-id">${escapeHtml(h.id)}</code>
-                    <span class="item-subject">${escapeHtml(h.title)}</span>
-                  </div>
-                  <div class="item-meta">match: ${escapeHtml(h.match_field)}</div>
-                </div>
-              `).join("");
-              $$("#search-results .item").forEach((el) =>
-                el.addEventListener("click", () => {
-                  results.classList.remove("visible");
-                  input.value = "";
-                  if (el.dataset.type === "spec") openSpecModal(el.dataset.id);
-                  else openTaskModal(el.dataset.id);
-                })
-              );
-            }
+            results.innerHTML = hits.length
+              ? hits.map((h) => `
+                  <button class="item" data-goto="#/${h.type === "spec" ? "spec" : "task"}/${encodeURIComponent(h.id)}">
+                    <div class="item-row1">
+                      <span class="status-tag ${escapeHtml(h.status)}">${escapeHtml(statusLabel(h.status))}</span>
+                      <code class="item-id">${escapeHtml(h.id)}</code>
+                      <span class="item-subject">${escapeHtml(h.title)}</span>
+                    </div>
+                    <div class="item-meta">matched ${escapeHtml(h.match_field)}</div>
+                  </button>`).join("")
+              : '<div class="empty"><strong>No matches</strong>Try a different word or an ID.</div>';
             results.classList.add("visible");
+            $$(".item", results).forEach((el) =>
+              el.addEventListener("click", () => { results.classList.remove("visible"); input.value = ""; }));
           } catch (err) {
             console.error("search error", err);
           }
         }, 200);
       });
-      document.addEventListener("click", (e) => {
-        if (!e.target.closest(".search-wrap")) results.classList.remove("visible");
-      });
+      input.addEventListener("keydown", (e) => { if (e.key === "Escape") { results.classList.remove("visible"); input.blur(); } });
+      document.addEventListener("click", (e) => { if (!e.target.closest(".search-wrap")) results.classList.remove("visible"); });
     }
 
-    // -------- SSE connection --------
+    // ================= SSE =================
     let sse = null;
+    let sseRefreshTimer = null;
     function connectSse() {
       if (sse) sse.close();
       sse = new EventSource("/api/events/stream");
@@ -1715,82 +1749,36 @@
         $("#live").classList.remove("disconnected");
       });
       sse.addEventListener("refresh", () => {
-        refresh();
+        // Coalesce bursts so a busy fleet doesn't re-render on every tick.
+        clearTimeout(sseRefreshTimer);
+        sseRefreshTimer = setTimeout(() => { if (!isEditing()) render(); }, 250);
       });
       sse.addEventListener("request", (e) => {
-        const data = JSON.parse(e.data);
-        liveRequests.push(data);
-        if (liveRequests.length > 50) liveRequests.shift();
-        renderCombinedEvents();
+        try {
+          liveRequests.push(JSON.parse(e.data));
+          if (liveRequests.length > 50) liveRequests.shift();
+        } catch {}
       });
       sse.onerror = () => {
         $("#live").classList.remove("connected");
         $("#live").classList.add("disconnected");
-        // EventSource auto-reconnects; just visual feedback here
       };
     }
 
-    // -------- Boot --------
-    $('#modal-bg').addEventListener('click', (e) => {
-      if (e.target === e.currentTarget) closeModal();
-    });
-    $("#modal-close").addEventListener("click", closeModal);
-    document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeModal(); });
-    $$("#task-filters .filter-btn").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const status = btn.dataset.status;
-        if (status === "") {
-          activeTaskStatuses.clear();
-        } else {
-          if (activeTaskStatuses.has(status)) {
-            activeTaskStatuses.delete(status);
-          } else {
-            activeTaskStatuses.add(status);
-          }
-        }
-        updateFilterVisuals("#task-filters", activeTaskStatuses);
-        refresh();
-      });
-    });
-    $$("#spec-filters .filter-btn").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const status = btn.dataset.status;
-        if (status === "") {
-          activeSpecStatuses.clear();
-        } else {
-          if (activeSpecStatuses.has(status)) {
-            activeSpecStatuses.delete(status);
-          } else {
-            activeSpecStatuses.add(status);
-          }
-        }
-        updateFilterVisuals("#spec-filters", activeSpecStatuses);
-        refresh();
-      });
-    });
-    $$("#event-filters .filter-btn").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        activeEventFilter = btn.dataset.eventFilter;
-        $$("#event-filters .filter-btn").forEach((b) => b.classList.remove("active"));
-        btn.classList.add("active");
-        renderCombinedEvents(lastDbEvents);
-      });
-    });
-    $("#new-spec-btn").addEventListener("click", openNewSpecModal);
-    $("#new-task-btn").addEventListener("click", openNewTaskModal);
-
-    function initFilterLabels() {
-      $$(".filter-btn[data-status]").forEach((btn) => {
-        btn.textContent = statusLabel(btn.dataset.status);
-      });
+    // Never wipe a form the user is filling in.
+    function isEditing() {
+      const el = document.activeElement;
+      if (!el) return false;
+      if (["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName) && el.id !== "search") return true;
+      return parseRoute().segments[0] === "new";
     }
-    initFilterLabels();
 
+    // ================= Boot =================
+    window.addEventListener("hashchange", render);
     setupSearch();
-    refresh();
+    render();
     connectSse();
-    // fetch context info once on load
-    api("GET", "/api/context").then(ctx => { appContext = ctx; }).catch(() => {});
+    api("GET", "/api/context").then((ctx) => { appContext = ctx; }).catch(() => {});
   </script>
 </body>
 </html>

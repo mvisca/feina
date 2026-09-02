@@ -441,10 +441,16 @@ export function startServer(opts: ServerOptions): { url: string; stop: () => voi
           return json(status);
         }
 
-        // GET /api/agents — running opencode processes with task matching
+        // GET /api/agents — running agent processes with task matching
         if (path === "/api/agents" && method === "GET") {
           const inProgress = listTasks(db, { status: "in_progress" });
-          const expected = inProgress.map((t) => ({ taskId: t.id, worktree: t.worktree }));
+          // task.worktree is stored relative to the project root the server
+          // was launched from — resolve it so it can be compared against the
+          // absolute paths /proc/:pid/cwd returns.
+          const expected = inProgress.map((t) => ({
+            taskId: t.id,
+            worktree: t.worktree ? resolve(process.cwd(), t.worktree) : null,
+          }));
           const agents = await listAgentProcesses(expected);
           return json(agents);
         }

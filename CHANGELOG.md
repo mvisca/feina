@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.8.4] - 2026-09-02
+
+### Fixed
+
+- **Detección de agentes activos no reflejaba agentes reales.** El matching en 0.8.3 seguía dependiendo de encontrar el substring `TASK-...` en la línea de comando del proceso — pero sesiones reales (`claude`, `opencode` corriendo cd'd al worktree de la tarea) casi nunca tienen el task id en su `argv`, así que nunca matcheaban. Además `task.worktree` se guarda relativo al root del proyecto (`.worktrees/TASK-XXX`) y se comparaba tal cual contra rutas absolutas de `/proc/:pid/cwd`, que tampoco matcheaban nunca. `listAgentProcesses` ahora usa el cwd del proceso como señal primaria: escanea `/proc/*/cwd` de todos los procesos y los compara contra el worktree absoluto de cada tarea `in_progress` (resuelto en `server.ts` con `resolve(process.cwd(), task.worktree)`). El grep por `TASK-...` en el comando queda sólo como fallback de baja confianza (`verified: false`) para tareas sin worktree.
+
 ## [0.8.3] - 2026-09-02
 
 ### Added

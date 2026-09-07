@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.8.5] - 2026-09-07
+
+### Fixed
+
+- **Contador "active agents" del navbar sobrecontaba y oscilaba.** El pill sumaba `agentProcesses.length`, es decir, todos los procesos con cwd dentro de un worktree — pero una sesión de agente real suele lanzar procesos hijos (`git`, `bun`, `rg`, `tsc`, ...) que también quedan momentáneamente con cwd en ese worktree y se contaban como agentes separados. Esto inflaba el número (ej. 5 en vez de 1) y lo hacía oscilar entre polls de 5s a medida que esos hijos aparecían y desaparecían, mientras que la card de un task individual sólo reflejaba ese task puntual. `renderAgentsPill()` ahora agrupa por `taskId` y cuenta tasks distintas con al menos un proceso matcheado, en línea con lo que ya mostraba cada worktree card.
+
 ## [0.8.4] - 2026-09-02
 
 ### Fixed

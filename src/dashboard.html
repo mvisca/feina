@@ -1721,8 +1721,18 @@
     function renderAgentsPill() {
       const el = $("#agents-pill");
       if (!el) return;
-      const total = agentProcesses.length;
-      const verified = agentProcesses.filter((a) => a.verified).length;
+      // Group by taskId: a single agent session commonly spawns child
+      // processes (git, bun, rg, tsc, ...) whose cwd also lands inside the
+      // worktree, so agentProcesses.length overcounts and flickers as those
+      // children come and go. What "active agents" means is distinct tasks
+      // with at least one matched process.
+      const byTask = new Map();
+      for (const a of agentProcesses) {
+        if (!byTask.has(a.taskId)) byTask.set(a.taskId, []);
+        byTask.get(a.taskId).push(a);
+      }
+      const total = byTask.size;
+      const verified = [...byTask.values()].filter((procs) => procs.some((a) => a.verified)).length;
       const unverified = total - verified;
       el.classList.toggle("live", total > 0);
       const title = total === 0

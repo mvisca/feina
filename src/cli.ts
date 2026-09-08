@@ -57,7 +57,9 @@ import {
   type OrphanKillResult,
 } from "./server-state";
 
-const VERSION = "0.8.4";
+const VERSION: string = JSON.parse(
+  readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), "../package.json"), "utf-8"),
+).version;
 
 interface ParsedArgs {
   positional: string[];

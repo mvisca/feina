@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.8.6] - 2026-09-08
+
+### Fixed
+
+- **`--version` mostraba un número desactualizado.** `src/cli.ts` tenía `VERSION` hardcodeado como string literal, separado de `package.json` — al bumpear la versión en 0.8.5 quedó desincronizado y `feinai --version` seguía reportando `0.8.4`. Ahora `VERSION` se lee de `package.json` en runtime, así que no se puede volver a desincronizar.
+
 ## [0.8.5] - 2026-09-07
 
 ### Fixed
